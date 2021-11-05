@@ -1,0 +1,123 @@
+//14, CSCI340 Project 5, 4/17/2016
+package sudoku;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
+
+public class Sudoku {
+	public static void main(String[] args) {
+		int[][] puzzle = new int[9][9];
+		
+		// get file name of puzzle
+		String inputFileName = "";
+		if (args.length == 0) {
+			System.out.print("Enter input filename: ");
+			BufferedReader cbr = new BufferedReader(new InputStreamReader(System.in));
+			try {
+				inputFileName = cbr.readLine();
+			} catch (IOException e1) {
+				System.out.println("Input filename is invalid.");
+				System.exit(0);
+			}
+		}
+		else{
+			inputFileName=args[0];
+		}
+
+		// read puzzle from file
+		String line = null; // current line from input file
+		int rowNum = 0; //currently importing puzzle row
+		try {
+			FileReader fr = new FileReader(inputFileName);
+			BufferedReader br = new BufferedReader(fr);
+			while ((line = br.readLine()) != null) {
+				String[] strRow = line.split(" "); //current row of ints as str
+				for (int i=0;i<strRow.length;i++){
+					puzzle[rowNum][i]=Integer.parseInt(strRow[i]);
+				}
+				rowNum++;
+			}
+			br.close();
+		} catch (IOException e2) {
+			System.out.println("Input filename is invalid.");
+			System.exit(0);
+		}
+		
+		solve(puzzle);
+		
+		//output solved puzzle to file
+		try {
+			PrintWriter pw = new PrintWriter(inputFileName+".solved");
+			for (int i=0;i<=8;i++){
+				for (int j=0;j<=8;j++){
+					pw.print(puzzle[i][j]+" ");
+				}
+				pw.println();
+			}
+			pw.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public static boolean solve(int[][] puzzle){
+		for (int row=0;row<9;row++){ //loop rows
+			for (int col=0;col<9;col++){ //loop columns
+				if (puzzle[row][col]!=0){
+					//if position is already solved, move to next location
+					continue;
+				}
+				for (int solution = 1; solution <=9; solution++){ //check possible solutions
+					if (isSolutionValid(solution,row,col,puzzle)){
+						puzzle[row][col]=solution; //set temporary solution
+						if (solve(puzzle)){
+							//exit recursion if finished with all locations
+							return true; 
+						}
+						else{ 
+							//rollback temporary solution and check next solution
+							puzzle[row][col]=0; 
+						}
+						
+					}
+				}
+				return false; //no solution found in possible solutions loop
+			}
+		}
+		return true; //finished all locations
+	}
+	
+	private static boolean isSolutionValid(int solution, int row, int col, int[][] puzzle){
+		for (int j=0;j<=8;j++){ //check row for conflicts
+			if (puzzle[row][j]==solution) return false; //flag conflict			
+		}
+		for (int j=0;j<=8;j++){ //check col for conflicts
+			if (puzzle[j][col]==solution) return false; //flag conflict
+		}
+		for (int j: getSquareMembers(row,col,puzzle)){ //check square for conflicts
+			if (j==solution) return false; //flag conflict
+		}
+		return true; //no conflict found, solution maybe valid
+	}
+	
+	private static List<Integer> getSquareMembers(int row, int col, int[][] puzzle){
+		int colSquare = col / 3; //square number of column
+		int rowSquare = row / 3; //square number of row
+		ArrayList<Integer> members = new ArrayList<Integer>();
+		for (int j=0;j<=8;j++){ //rows
+			for (int k=0;k<=8;k++){ //columns
+				if (j/3==rowSquare && k/3==colSquare){//grid position is square member
+					members.add(puzzle[j][k]); //get square member for return array
+				}
+			}
+		}
+		return members;
+	}
+
+}

@@ -1,0 +1,218 @@
+/**
+ * Project 05-Sudoku
+ *
+ * This program recursively solves Sudoku puzzles.
+ *
+ * @author 16
+ * @date April 18, 2015
+ */
+package sudoku;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.util.Scanner;
+
+public class Sudoku {
+
+    static File inFile;
+    static RandomAccessFile outFile;
+    static Cell puzzle[][] = new Cell[9][9];
+
+    public static void main(String[] args) throws FileNotFoundException, IOException {
+        try {
+            System.out.print("Input Sudoku File: ");
+            
+            Scanner input = new Scanner(System.in);
+            String inputFile = input.next();
+
+            inFile = new File(inputFile);
+            outFile = new RandomAccessFile(new File(inputFile + ".solved"), "rw");
+            puzzle(inFile);
+            
+        } catch (Exception e) {
+            System.out.println("An Exception occurred. " + e);
+        }
+        solve(0, 0);
+
+        print();
+    }
+
+    /**
+     * Solves Sudoku puzzles by checking one cell at a time using Depth-First Search.
+     *
+     * @param row
+     * @param col
+     * @return
+     */
+    public static boolean solve(int row, int col) {
+        boolean done = false;
+        int nextRow = 0;
+        int nextCol = 0;
+        
+        // Calculates the next cell to check
+        if (col < 8) {
+            nextRow = row;
+            nextCol = col + 1;
+        } else {
+            nextRow = row + 1;
+            nextCol = 0;
+        }
+        
+        // if row == 9 then the row is solved.
+        if (row == 9) {
+            return true;
+        // else if the cell is solved, move on
+        } else if (puzzle[row][col].solved) {
+            return solve(nextRow, nextCol);
+        // else try 1-9 in current cell
+        } else {
+            for (int i = 1; i <= 9; i++) {
+                puzzle[row][col].value = i;
+                
+                if (isRowValid(row, col)
+                        && isColValid(row, col)
+                        && isSquareValid(row, col)
+                        && solve(nextRow, nextCol)) {
+                    
+                    return true;
+                }
+            }
+            // if none of the numbers work then the cell = 0 and we backtrack.
+            puzzle[row][col].value = 0;
+
+            return false;
+        }
+    }
+
+    /**
+     * Checks the row a cell is in to see if it can hold the number specified.
+     *
+     * @param row
+     * @param col
+     * @return
+     */
+    private static boolean isRowValid(int row, int col) {
+        for (int i = 0; i < 9; i++) {
+            if (puzzle[row][i].value == puzzle[row][col].value && i != col) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Checks to see if the current column is valid.
+     * 
+     * @param row
+     * @param col
+     * @return 
+     */
+    private static boolean isColValid(int row, int col) {
+        for (int i = 0; i < 9; i++) {
+            if (puzzle[i][col].value == puzzle[row][col].value && i != row) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
+     * Checks to see if the current square is valid.
+     * 
+     * @param row
+     * @param col
+     * @return 
+     */
+    private static boolean isSquareValid(int row, int col) {
+        //Calculates starting cells
+        int startR = (row / 3) * 3;
+        int startC = (col / 3) * 3;
+
+        for (int i = startR; i < (startR + 3); i++) {
+            for (int j = startC; j < (startC + 3); j++) {
+                // Makes sure it doesn't count the current cell being checked
+                if (puzzle[i][j].value == puzzle[row][col].value
+                        && i != row
+                        && j != col) {
+                    return false;
+                    
+                }
+            }
+        }
+
+        return true;
+    }
+    
+    /**
+     * Prints solved puzzle to file.
+     * @throws IOException 
+     */
+    public static void print() throws IOException {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                outFile.writeUTF(puzzle[i][j] + " ");
+            }
+            outFile.writeUTF("\n");
+        }
+    }
+
+    /**
+     * Fills out a puzzle matrix to solve.
+     *
+     * @param file
+     * @throws FileNotFoundException
+     */
+    public static void puzzle(File file) throws FileNotFoundException, IOException {
+        Scanner input = new Scanner(file);
+        int value;
+
+        while (input.hasNext()) {
+            for (int i = 0; i < 9; i++) {
+                for (int j = 0; j < 9; j++) {
+                    value = input.nextInt();
+                    puzzle[i][j] = new Cell(value, (value > 0));
+
+                }
+            }
+        }
+    }
+    
+    /**
+     * Class to create a cell object.
+     */
+    static class Cell {
+
+        int value;
+        boolean solved;
+        
+        /**
+         * A constructor for changing the value.
+         * @param value 
+         */
+        public Cell(int value) {
+            this.value = value;
+            solved = false;
+        }
+        
+        /**
+         * A constructor for when the puzzle is being filled with a fixed value.
+         * @param value
+         * @param fixed 
+         */
+        public Cell(int value, boolean fixed) {
+            this.value = value;
+            this.solved = fixed;
+        }
+        
+        /**
+         * Prints out the value of this cell.
+         * @return 
+         */
+        @Override
+        public String toString() {
+            return value + "";
+        }
+    }
+}

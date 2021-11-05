@@ -1,0 +1,158 @@
+package sudoku;
+import java.io.*;
+import java.util.*;
+
+/**
+ * Finding the solution for a given Sudoku puzzle.   
+ * 340 Data structures
+ * @author 9
+ */
+public class Sudoku {
+    
+   //Holds all 0 valued slots and their corresonding positioning in the Sudoku puzzle
+   //These positions aid the search for the solution 
+   private static int[][] missingElements = new int[81][2];
+   
+   //Represents the entire puzzle. 
+   private static int[][] sudokuPuzzle = new int[9][9];
+   
+   //Used to determine the number of slots needed to be filled with values along with when to stop the search to avoid array out of bounds when the search completes 
+   private static int missingElementCount = 0;
+   
+    //Holds input file name
+   private static String fileName;
+   
+   public static void main(String[] args) {
+    //Setting up the arrays 
+    setUpSudoku();
+    
+    //Starting at first empty slot
+    if ( ! solvePuzzle(sudokuPuzzle, 0))
+      System.out.print("Something went wrong");
+    else
+        System.exit(0);
+ 
+   }
+  
+  /**  
+   * Filling in the Sudoku puzzle by inserting 1-9 into the empty slots(0 valued) and solving recursively to find the solution.
+   *  
+   */
+  private static boolean solvePuzzle( int[][] sudokuPuzzle ,int currentEmptyPosition) {
+    
+      //Avoding walking off the array of missing slots while providing an exist for the recursive call
+      if (missingElementCount > currentEmptyPosition ) {
+      
+      //Location of the missing elements to be filled - in relation to sudokuPuzzle array indexes 
+      int rowIndexOfEmpty = missingElements[currentEmptyPosition][0];
+      int columnIndexOfEmpty = missingElements[currentEmptyPosition][1];
+      
+      //Try 1-9 in empty slot to see if it solves the sudoku
+      for (int insertValue = 1; insertValue < 10; insertValue++) {
+          
+        //Empty slot being assigned 1-9 for the recursive calls
+        sudokuPuzzle[rowIndexOfEmpty][columnIndexOfEmpty] = insertValue;
+        
+        //Condtional checks validity and then applies the recursive call 
+        if (validateSolution( sudokuPuzzle, rowIndexOfEmpty, columnIndexOfEmpty ) && solvePuzzle( sudokuPuzzle , currentEmptyPosition + 1 )) {
+          //Recursively returns true when Sudoku is complete essentially increasing position value to exceed the base case which is the number of slots needed to be replaced  
+          return true;
+        }  
+      }
+      // No solution for the current position. Backtrack and continue  
+      sudokuPuzzle[rowIndexOfEmpty][columnIndexOfEmpty] = 0; 
+      return false;//Process of backtracking the recursive calls to try another element for position
+    }
+     //Existed the recursive calls print the soultion 
+      printSolution(sudokuPuzzle);
+      return true; 
+  }
+  
+  
+  /** Assigning file to the corresponding arrays and setting up the needed process */
+  private static void setUpSudoku(){
+    
+    Scanner input = new Scanner(System.in);
+   
+    System.out.println("Enter file name: ");
+    fileName = input.next();
+    try {
+         Scanner fileReader = new Scanner(new File(fileName));
+         
+         //Assigning all values including missing values represented by 0 to the individual 'slots' of the puzzle
+         for (int row = 0; row < 9; row++){//Row index
+        
+            for (int column = 0; column < 9; column++){//column index 
+            //Element from input to be inserted into the specified slot 
+           
+                int element = fileReader.nextInt();
+        
+                //Adding only the slots that need to be replaced with values(0 valued) into the helper array for later use in completing the sudoku
+                if( element == 0){//Locations of the missing elements
+                    missingElements[missingElementCount][0] = row;//Holds the missing elements row index reference determined by its position in sudokuPuzzle
+                    missingElements[missingElementCount++][1] = column;// Holds the missing elements column index reference determined by its position in sudokuPuzzle
+                }
+            //Placing all values provided from the input, including 0 into the puzzle
+            sudokuPuzzle[row][column] = element;
+            }
+        }
+    }
+    catch (FileNotFoundException ex) {
+        ex.printStackTrace();
+    }   
+ }
+  
+  /**
+   * Checking if the additions per recursive call hold to Sudoku standards.
+   * @return boolean value: Depending on if the addition is plausible towards the overall solution for the puzzle.
+   */
+  private static boolean validateSolution(int[][] matrixOfPuzzle , int rowCheck , int columnCheck ) {
+    
+    //Checking rows and columns to meet Sudoku standards of new addition to the matrix  
+    for (int index = 0; index < 9; index++)
+      if (matrixOfPuzzle[rowCheck][index] == matrixOfPuzzle[rowCheck][columnCheck]  && index != columnCheck 
+          || matrixOfPuzzle[index][columnCheck] == matrixOfPuzzle[rowCheck][columnCheck] && index != rowCheck )
+          return false;
+   
+   //Three-by-three starting positions 
+   int rowIndex = rowCheck / 3 * 3;
+   int columnIndex = columnCheck / 3 * 3;
+   
+    // validating 3 by 3 "grids"/boxes
+    for (int row = rowIndex ; row < rowIndex + 3; row++)
+      for (int col = columnIndex; col < columnIndex + 3; col++)
+        if ( matrixOfPuzzle[row][col] == matrixOfPuzzle[rowCheck][columnCheck])
+            if(row != rowCheck && col != columnCheck )
+                return false;
+        
+    // The addition holds, and may be potential solutions for the overall problem
+    return true; 
+  }
+
+  /** Print the solution to the file
+   * 
+   * @param completedPuzzle Puzzle to be printed */ 
+ public static void printSolution(int[][] completedPuzzle ) {
+       
+    try {//Walking through and printing to the file
+        PrintWriter write = new PrintWriter(new File(fileName + ".solved"));
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++){
+                if(j == 8)
+                    write.print(completedPuzzle[i][j] + "\n");
+                else
+                    write.print(completedPuzzle[i][j] + " ");
+            }
+      
+      
+        }
+        write.close();
+       } catch (FileNotFoundException ex) {
+           ex.printStackTrace();
+       }
+   
+ }
+   
+}
+
+

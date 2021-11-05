@@ -1,0 +1,236 @@
+/**
+ * Author: 4
+ *
+ * Date: 4/17/2016
+ *
+ * Class: CSCI 340
+ *
+ * Program Description: This program takes a .sdk file passed in as a runtime parameter.
+ * The program then reads the Sudoku puzzle from the file and solves it using a
+ * depth first search algorithm. The answer is then written to a file with the
+ * original file name plus a .solved extension.
+ *
+ * Known Bugs: None.
+ */
+package sudoku;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author 4
+ */
+public class Sudoku {
+
+    /**
+     * A 2D array to hold the Sudoku board
+     */
+    private static int[][] sBoard = new int[9][9];
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        File file = new File(args[0]);
+        initBoard(file);
+        solve(0, 0);
+        writeBoard(sBoard, file);
+    }
+
+    /**
+     * This method initializes the Sudoku board in the file name passed in as a
+     * parameter.
+     *
+     * @param file the file containing the board to be initialized
+     */
+    public static void initBoard(File file) {
+        try {
+            try (Scanner in = new Scanner(file)) {
+                while (in.hasNextInt()) {
+                    for (int i = 0; i < 9; i++) {
+                        for (int j = 0; j < 9; j++) {
+                            sBoard[i][j] = in.nextInt();
+                        }
+                    }
+                    break;
+                }
+            }
+        } catch (FileNotFoundException ex) {
+            System.out.println("The file could not be found, try again.");
+            System.exit(0);
+        }
+    }
+
+//I realized after rereading the assignment on D2L that this method isn't necessary, but I kept it anyways.
+//    /**
+//     * This method prompts the user to enter a .sdk file name.
+//     *
+//     * @return a file object to be used by the rest of the program
+//     */
+//    public static File promptUser() {
+//        Scanner in = new Scanner(System.in);
+//        System.out.println("Please enter the .sdk file you wish to read from.");
+//        String fileName = in.nextLine();
+//        File file = new File(fileName);
+//        in.close();
+//        return file;
+//    }
+    
+    /**
+     * This method writes the solved board to a new file with a .sdk.solved
+     * extension.
+     *
+     * @param board the solved board
+     * @param file the original file that the board was read from
+     */
+    public static void writeBoard(int[][] board, File file) {
+        try (Writer writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file.getName() + ".solved"), "utf-8"))) {
+            for (int[] boardElement : board) {
+                for (int j = 0; j < board.length; j++) {
+                    writer.write(boardElement[j] + " ");
+                }
+                writer.write("\n");
+            }
+        } catch (IOException ex) {
+            Logger.getLogger(Sudoku.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    /**
+     * This method uses a depth first search algorithm to solve the Sudoku
+     * puzzle.
+     *
+     * @param row the row of the Sudoku puzzle
+     * @param column the column of the Sudoku puzzle
+     */
+    public static void solve(int row, int column) {
+        int checks = 0; // The number of times that a slot failed to find a working number for the puzzle
+        int lineBreak = 0; // A variable to check when to print a carraige return
+        int lastRow = 0;
+        int lastColumn = 0;
+
+        //Iterate to find the last position in the puzzle with a 0 in it
+        outerLoop:
+        for (int i = sBoard.length - 1; i >= 0; i--) {
+            for (int j = sBoard.length - 1; j >= 0; j--) {
+                if (sBoard[i][j] == 0) {
+                    lastRow = i;
+                    lastColumn = j;
+                    break outerLoop;
+                }
+            }
+        }
+
+        //Solve using DFS
+        for (int i = row; i < sBoard.length; i++) {
+            for (int j = column; j < sBoard.length; j++) {
+                if (sBoard[i][j] == 0) {
+                    for (int k = 1; k <= 9; k++) {
+                        if (checkDuplicates(k, i, j)) {
+                            sBoard[i][j] = k;
+                            if (j == 8) {
+                                checks++;
+                                solve(i + 1, 0);
+                            } else {
+                                checks++;
+                                solve(row, j + 1);
+                            }
+                        } else {
+                            checks++;
+                        }
+                    }
+                    if (checks == 9) {
+                        if (sBoard[lastRow][lastColumn] == 0) {
+                            sBoard[i][j] = 0;
+                        }
+                        return;
+                    }
+                }
+            }
+            row++;
+            column = 0;
+        }
+    }
+
+    /**
+     * This method checks for duplicate numbers in a row and column passed in as
+     * a parameter. The method also checks sub-squares in the puzzle for
+     * duplicates.
+     *
+     * @param check the number to check for duplicates
+     * @param row the row to check for duplicates in
+     * @param column the column to check for duplicates in
+     * @return a boolean for whether or not there was a duplicate found in a
+     * row/column/sub-square
+     */
+    public static boolean checkDuplicates(int check, int row, int column) {
+        //Check rows and columns
+        for (int i = 0; i < sBoard.length; i++) {
+            if (sBoard[row][i] == check) {
+                return false;
+            }
+
+            if (sBoard[i][column] == check) {
+                return false;
+            }
+        }
+
+        //Check sub-square
+        int[][] subSquare = generateSubSquare(row, column);
+        for (int[] subSquare1 : subSquare) {
+            for (int j = 0; j < subSquare.length; j++) {
+                if (subSquare1[j] == check) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * This method generates the sub-square for a position specified via row and
+     * column passed in as parameters.
+     *
+     * @param row the row that the sub-square is in
+     * @param column the column the sub-square is in
+     * @return a 2D array that is a 3x3 sub-square of the original Sudoku puzzle
+     */
+    public static int[][] generateSubSquare(int row, int column) {
+        int[][] subSquare = new int[3][3];
+        row = determineSubRange(row);
+        column = determineSubRange(column);
+        for (int i = row; i < row + 3; i++) {
+            for (int j = column; j < column + 3; j++) {
+                subSquare[i % 3][j % 3] = sBoard[i][j];
+            }
+        }
+        return subSquare;
+    }
+
+    /**
+     * This method is a helper method for generateSubSquare() that helps
+     * determine where the sub-square falls within the overall Sudoku puzzle.
+     *
+     * @param num the value to check the sub-square range for
+     * @return and int the starting position of a row/column in a sub-square
+     */
+    public static int determineSubRange(int num) {
+        if (num < 3) {
+            num = 0;
+        } else if (num >= 3 && num < 6) {
+            num = 3;
+        } else if (num >= 6) {
+            num = 6;
+        }
+        return num;
+    }
+}

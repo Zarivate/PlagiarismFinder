@@ -1,0 +1,191 @@
+/*
+ * Name: 2
+ * Class: CSCI 340
+ * Description: This package will start off by prompting the user for a file input.
+ *The file should be a sudoku puzzle in the standard format of a sudoku puzzle,
+ *just without the borders and zeros filling the empty spaces. The program will 
+ *then recursivley solve the puzzle using a depth first search by first finding
+ *a cell containing a zero(empty). It will then recursively check to see if a sequence of 
+ *number ranging 1-9 can go in that place according to the rules of sudoku. If no 
+ *can work it will then back track and try again. It weill then print out the solved 
+ *puzzle in the same format as the input file.
+ */
+package sudoku;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Arrays;
+import java.util.Scanner;
+
+/**
+ * @author 2
+ */
+public class Sudoku {
+    //2d array for holding our solved Sudoku puzzle
+    static int[][] solvedPuzzle = new int[9][9];
+
+    public static void main(String[] args) {
+        String fileForSpellCheck;
+        
+        //will be the position holder for the "rows" in the array
+        int counter = 0;
+        
+        //this is the initial unsolved puzzle containing zeros
+        int[][] sudokuPuzzle = new int[9][9];
+
+        //prompting the user for file path
+        Scanner in = new Scanner(System.in);
+        System.out.print("Enter a file pathway: ");
+
+        fileForSpellCheck = in.nextLine();
+        try {
+            File file = new File(fileForSpellCheck);
+            Scanner input = new Scanner(file);
+            //filling in our array with the file 
+            while (input.hasNext()) {
+                int i = 0;
+                for (i = 0; i < 9; i++) {
+                    //converting the String value of the file input to integers
+                    sudokuPuzzle[counter][i] = Integer.parseInt(input.next());
+                }
+                //so that when a collumn hits 9, which is the final cell position,
+                //the row will increment to the next position
+                if (i % 9 == 0) {
+                    counter++;
+                }
+            }
+        } catch (FileNotFoundException ex) {
+            System.out.println(
+                    "Unable to open file ");
+        }
+        
+        //just printing out the original input file puzzle values
+        System.out.println("The original value:");
+        for (int i = 0; i < 9; i++) {
+            for (int x = 0; x < 9; x++) {
+                System.out.print(sudokuPuzzle[i][x] + " ");
+            }
+            System.out.println();
+        }
+        System.out.println();
+        System.out.println();
+        //this is just so that I can call the solve method using the input puzzle
+        //since the class variable solvedPuzzle is set inside the solve method
+        boolean holder2 = solve(sudokuPuzzle, 0, 0);
+
+        //for printing out the solved Sudoku puzzle
+        System.out.println("The solved puzzle:");
+        for (int i = 0; i < 9; i++) {
+            for (int x = 0; x < 9; x++) {
+                System.out.print(solvedPuzzle[i][x] + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    //this method is to see if the puzzle contains the given value in the row
+    //currently being used, returns true if the row already has this value, else false
+    //showing its good for insertion
+    private static boolean rowContains(int[][] holder, int row, int value) {
+        boolean state = false;
+        for (int x = 0; x < 9; x++) {
+            if (holder[row][x] == value) {
+                state = true;
+                return state;
+            }
+        }
+        return state;
+    }
+    
+    //this method is to see if the puzzle contains the given value in the column
+    //currently being used, returns true if the column already has this value, else false
+    //showing its good for insertion
+    private static boolean columnContains(int[][] holder, int column, int value) {
+        boolean state = false;
+        for (int x = 0; x < 9; x++) {
+            if (holder[x][column] == value) {
+                state = true;
+                return state;
+            }
+        }
+        return state;
+    }
+    
+    //this method is to see if the puzzle contains the given value in the 3x3 sub-box
+    //currently being used, returns true if the sub-box already has this value, else false
+    //showing its good for insertion
+    private static boolean subBoxContains(int[][] holder, int row, int column, int value) {
+        //finds what subbox the value belongs in, there are 9 total boxes the value could
+        //fall in depending on the column and row passed in
+        int startRow = (row / 3) * 3;
+        int startColumn = (column / 3) * 3;
+        boolean state = false;
+        for (int x = startRow; x < startRow + 3; x++) {
+            for (int y = startColumn; y < startColumn + 3; y++) {
+                if (holder[x][y] == value) {
+                    state = true;
+                    return state;
+                }
+            }
+        }
+        return state;
+    }
+    
+    //this is mainly used for the base case of the recursive call, checks if there any cells
+    //left containing 0(empty), if there are no more 0's then the puzzle is done
+    private static boolean findEmpty(int[][] holder) {
+        for (int x = 0; x < 9; x++) {
+            for (int y = 0; y < 9; y++) {
+                if (holder[x][y] == 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    //actualmethod for solving the puzzle
+    private static boolean solve(int[][] holder, int row, int column) {
+        //the base case checking 
+        if (!(findEmpty(holder))) {
+            solvedPuzzle = holder;
+            return true;
+        }
+        //the three checks a value needs to pass in order to be inserted into
+        //the sudoku puzzle
+        boolean check1;
+        boolean check2;
+        boolean check3;
+        
+        //find the zero place in order to replace it with a new value, the loop:
+        //label is so that I can exit the loop as soon as a 0 is found
+        loop:
+        for (int x = 0; x < 9; x++) {
+            for (int y = 0; y < 9; y++) {
+                if (holder[x][y] == 0) {
+                    row = x;
+                    column = y;
+                    break loop;
+                }
+            }
+        }
+	//goes through the numbers 1-9 checking to see if those values will work in the puzzle
+        for (int possibleAnswer = 1; possibleAnswer <= 9; possibleAnswer++) {
+	    //all the necasary conditions for a value to be placed
+            check1 = rowContains(holder, row, possibleAnswer);
+            check2 = columnContains(holder, column, possibleAnswer);
+            check3 = subBoxContains(holder, row, column, possibleAnswer);
+	    //if everything checks out, insert and continue recursively
+            if (!(check1) && !(check2) && !(check3)) {
+                holder[row][column] = possibleAnswer;
+		//the recursive calling of our solve method
+                if (solve(holder, row, column)) {
+                    return true;
+                }
+            }
+	    //if recursion does not complete, set value back to zero, try again
+            holder[row][column] = 0;
+        }
+        return false;
+    }
+}

@@ -1,0 +1,151 @@
+/**
+ * This program brute-forces a solution to a Sudoku puzzle.
+ * <p>
+ *
+ *
+ * @author 5
+ * @edu.uwp.cs.340.CSCI 340 - Data Structures and Algorithms
+ * @edu.uwp.cs.340.section 001
+ * @edu.uwp.cs.340.assignment 5
+ * @bugs
+ *
+ */
+package sudoku;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Scanner;
+
+public class Sudoku {
+
+    /**
+     * The Sudoku grid.
+     */
+    protected static int[][] grid = new int[9][9];
+    /**
+     * The input file.
+     */
+    protected static Scanner input = null;
+    /**
+     * Source for user input.
+     */
+    protected static Scanner keybd = new Scanner(System.in);
+    /**
+     * Whether the puzzle has been solved or not. Used to break from loops.
+     */
+    protected static boolean solved = false;
+
+    /**
+     * The bulk of the program. This recursive method calls another to find
+     * viable numbers, and moves forward once found. Not finding one breaks
+     * back to the previous iteration to try more numbers.
+     * @param x
+     * @param y
+     * @return
+     */
+    protected static boolean solve(int x, int y) {
+        if (grid[x][y] != 0) {
+            int newx = x + 1; // Moving forward in the row.
+            int newy = y;
+            if (newx == 9) { // Moves to next row if reached the end.
+                newx = 0;
+                newy++;
+            }
+            if (newy == 9) {
+                solved = true;
+                return true;
+            }
+            solve(newx, newy);
+        } else {
+            for (int i = 1; i < 10 && !solved; i++) {
+                if (!check(x, y, i) && !solved) {
+                    grid[x][y] = i;
+                    int newx = x + 1; // Moving forward in the row.
+                    int newy = y;
+                    if (newx == 9) { // Moves to next row if reached the end.
+                        newx = 0;
+                        newy++;
+                    }
+                    if (newy == 9) {
+                        solved = true;
+                        return true;
+                    }
+                    solve(newx, newy);
+                }
+            }
+            if (!solved) { // Resets spot to 0 if it has to recheck a previous one.
+                grid[x][y] = 0;
+            }
+        }
+        return solved;
+    }
+
+    /**
+     *
+     * @param x The x position of the square being examined.
+     * @param y The y position of the square being examined.
+     * @param value
+     * @return Returns true if found, false if not.
+     */
+    protected static boolean check(int x, int y, int value) {
+        // Checking the column.
+        for (int i = 0; i < 9; i++) {
+            if (grid[x][i] == value) {
+                return true;
+            }
+        }
+        // Checking the row.
+        for (int i = 0; i < 9; i++) {
+            if (grid[i][y] == value) {
+                return true;
+            }
+        }
+        // Checking the square.
+        x = (x / 3) * 3; // Normalizes to the 'starting' value of each 3x3 section, thanks to Java int math.
+        y = (y / 3) * 3;
+        for (int i = x; i <= x + 2; i++) {
+            for (int k = y; k <= y + 2; k++) {
+                if (grid[i][k] == value) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 
+     * @param filename 
+     */
+    protected static void findFile(String filename) {
+        try {
+            input = new Scanner(new File(filename));
+        } catch (FileNotFoundException exception) {
+            System.out.println("Please try again.");
+            input = null;
+        }
+    }
+
+    /**
+     * The main method. Reads the file, calls the solve method, and prints the result.
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        do {
+            findFile(keybd.next());
+        } while (input == null);
+        for (int i = 0; i < 9; i++) {
+            for (int k = 0; k < 9; k++) {
+                grid[k][i] = input.nextInt();
+            }
+        }
+        solve(0, 0);
+        System.out.println("Solved = " + solved);
+        for (int i = 0; i < 9; i++) {
+            for (int k = 0; k < 9; k++) {
+                System.out.print(grid[k][i] + " ");
+            }
+            System.out.println("");
+        }
+    }
+}

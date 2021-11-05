@@ -1,0 +1,309 @@
+
+package sudoku;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Sudoku Class.
+ * <p>
+ * This class solves a sudoku game contained in a .sdk file.
+ * <p>
+ * There is one inner class that defines a value object. Two global variables which
+ * are a double array of value objects named BOARD, and a File named outputFile which stores
+ * the solution. The Input file is input as a command line argument. There are methods 
+ * to readFile, writeFile, printBoard, findValues, getPossibleValues, and a main driver
+ * method.
+ * 
+ * @author 23
+ * @edu.uwp.cs.340.course CSCI 340 - Data Structures and Algorithms
+ * @edu.uwp.cs.340.section 001
+ * @edu.uwp.cs.340.assignment 5
+ * @bugs: none
+ */
+public class Sudoku {
+
+    /**
+     * Double array of value objects for storing the board of the Sudoku puzzle.
+     */
+    private static final Value[][] BOARD = new Value[9][9];
+    
+    /**
+     * File to save the solution to.
+     */
+    private static File outputFile;
+
+    /**
+     * Driver method for Sudoku Puzzle.
+     * <p>
+     * Displays program header, reads input file. prints the board unsolved and
+     * solved. Then saves the solution to a file.
+     * 
+     * @param args the command line arguments, args[0] contains input file.
+     */
+    public static void main(String[] args) {
+        System.out.println("******* Sudoku Solver *******");
+        System.out.println();
+        if (args.length > 0) {
+            File inputFile = new File(args[0]);
+            readFile(inputFile);
+            outputFile = new File(args[0] + ".solved");
+            System.out.println(inputFile.getName());
+            printBoard();
+            findValues(0, 0);
+        } else {
+            System.out.println("No file specified in command line argument!!!");
+        }
+    }
+
+    /**
+     * Reads the input file and stores it in BOARD.
+     * 
+     * @param file input file containing the sudoku puzzle.
+     */
+    private static void readFile(File file) {
+        try (BufferedReader fileReader = new BufferedReader(new FileReader(file))) {
+            int rowIndex = 0;
+            while (fileReader.ready()) {
+                String line = fileReader.readLine();
+                String[] values = line.split(" ");
+                try {
+                    for (int i = 0; i < values.length; i++) {
+                        int value = Integer.parseInt(values[i]);
+                        if (value == 0) {
+                            BOARD[rowIndex][i] = new Value(value, false);
+                        } else if (value > 0 && value <= 9) {
+                            BOARD[rowIndex][i] = new Value(value, true);
+                        } else {
+                            System.out.println("File Read Error: " + value + " is out of range.");
+                            System.exit(1);
+                        }
+                    }
+                } catch (IndexOutOfBoundsException | NumberFormatException e) {
+                    System.out.println("File Read Error: Board Format Error.");
+                    System.exit(1);
+                }
+                rowIndex++;
+            }
+        } catch (IOException e) {
+            System.out.println("File Read Error: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    /**
+     * Writes the solution to a file and displays its location.
+     */
+    private static void writeFile() {
+        StringBuilder output = new StringBuilder();
+        try {
+            FileWriter fileWriter = new FileWriter(outputFile);
+            try (BufferedWriter bufferedWriter = new BufferedWriter(fileWriter)) {
+                for (Value[] row : BOARD) {
+                    for (Value value : row) {
+                        output.append(value.getValue()).append(" ");
+                    }
+                    output.append("\n");
+                }
+
+                bufferedWriter.write(output.toString());
+            }
+
+            System.out.println(outputFile.getName());
+            printBoard();
+
+            System.out.println("Solution file location: " + outputFile.getAbsolutePath());
+
+        } catch (IOException e) {
+            System.out.println("File Write Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Displays the current values that are stored in BOARD.
+     */
+    private static void printBoard() {
+        for (int r = 0; r < BOARD.length; r++) {
+            for (int c = 0; c < BOARD[r].length; c++) {
+                Value value = BOARD[r][c];
+                String output;
+                if (value.isFixed()) {
+                    output = (char) 27 + "[31m" + value.getValue() + (char) 27 + "[0m";
+                } else {
+                    output = "" + value.getValue();
+                }
+                System.out.print(output + " ");
+            }
+            System.out.println();
+        }
+        System.out.println();
+    }
+
+    /**
+     * Solves the sudoku puzzle with a depth first search algorithm.
+     * <p>
+     * must start with row 0 and column 0. The method is then recursively called
+     * to solve entire board.
+     * 
+     * @param row row location on board of value to find.
+     * @param column column location on board of value to find.
+     */
+    private static void findValues(int row, int column) {
+
+        // skip values with a fixed value.
+        while (BOARD[row][column].isFixed()) {
+
+            if (column < 8) {
+                column++;
+            } else if (row < 8 && column == 8) {
+                column = 0;
+                row++;
+            } else {
+                writeFile();
+                System.exit(0);
+            }
+        }
+
+        // find values for unfixed values.
+        List<Integer> possibleValues = getPossibleValues(row, column);
+        int index = 0;
+        if (!possibleValues.isEmpty()) {
+            while (index < possibleValues.size()) {
+                BOARD[row][column].setValue(possibleValues.get(index++));
+                if (column < 8) {
+                    findValues(row, column + 1);
+                } else if (row < 8 && column == 8) {
+                    findValues(row + 1, 0);
+                } else {
+                    writeFile();
+                    System.exit(0);
+                }
+            }
+            // previous guess was wrong reset this value to 0.
+            BOARD[row][column].setValue(0);
+        }
+    }
+
+    /**
+     * Finds all possible values for a given value on the board.
+     * 
+     * @param row row location of value.
+     * @param column column location of value.
+     * @return List of Integers containing all possible values for location.
+     */
+    private static List<Integer> getPossibleValues(int row, int column) {
+
+        List<Integer> possibleValues = new ArrayList<>(Arrays.asList
+            (1, 2, 3, 4, 5, 6, 7, 8, 9));
+        
+        Set<Integer> boardValues = new HashSet<>();
+
+        // get row values
+        for (int i = 0; i < BOARD[row].length; i++) {
+            if (i != column) {
+                boardValues.add(BOARD[row][i].getValue());
+            }
+        }
+
+        // get column values
+        for (int i = 0; i < BOARD.length; i++) {
+            if (i != row) {
+                boardValues.add(BOARD[i][column].getValue());
+            }
+        }
+
+        // get square values
+        int[][] squareIndexs = new int[][]{
+            {0, 1, 2}, {0, 1, 2}, {0, 1, 2},
+            {3, 4, 5}, {3, 4, 5}, {3, 4, 5},
+            {6, 7, 8}, {6, 7, 8}, {6, 7, 8}};
+
+        for (int squareRow : squareIndexs[row]) {
+            for (int squareColumn : squareIndexs[column]) {
+                if (!(squareRow == row && squareColumn == column)) {
+                    boardValues.add(BOARD[squareRow][squareColumn].getValue());
+                }
+            }
+        }
+
+        // remove board values from possible values
+        for (Integer value : boardValues) {
+            possibleValues.remove(value);
+        }
+
+        return possibleValues;
+    }
+
+    /**
+     * Inner class Value stores the integer value for a location and a boolean
+     * value fixed for a sudoku puzzle.
+     */
+    private static class Value {
+
+        /**
+         * integer value for this location.
+         */
+        private int value;
+        
+        /**
+         * boolean value true if this location is fixed.
+         */
+        private boolean fixed;
+
+        /**
+         * Two Argument Constructor for Value object.
+         * 
+         * @param value integer value for location.
+         * @param fixed boolean value true if fixed.
+         */
+        public Value(int value, boolean fixed) {
+            this.value = value;
+            this.fixed = fixed;
+        }
+
+        /**
+         * getter method for value.
+         * 
+         * @return integer value.
+         */
+        public int getValue() {
+            return value;
+        }
+
+        /**
+         * setter method for value.
+         * 
+         * @param value integer value to set value to. 
+         */
+        public void setValue(int value) {
+            this.value = value;
+        }
+
+        /**
+         * getter method for fixed.
+         * 
+         * @return boolean value of fixed.
+         */
+        public boolean isFixed() {
+            return fixed;
+        }
+
+        /**
+         * setter method for fixed.
+         * 
+         * @param fixed boolean value to set fixed to.
+         */
+        public void setFixed(boolean fixed) {
+            this.fixed = fixed;
+        }
+    }
+}

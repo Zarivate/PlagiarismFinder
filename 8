@@ -1,0 +1,140 @@
+/*
+ * Solves a sudoku puzzle given a grid of numbers. Works by using recursion to
+ * check each possible solution, and goes back a step if a solution is
+ * incorrect.
+ *
+ * 8
+ * CS 340
+ */
+package sudoku;
+
+import java.awt.Point;
+import java.util.Scanner;
+import java.io.File;
+import java.util.HashSet;
+import java.util.Stack;
+
+public class Sudoku {
+    
+   
+    public static void main(String[] args) {
+        Scanner fileScan = makeFileScanner();
+        int[][] grid = new int[9][9];
+
+        //fill array of ints with the grid from given file
+        while (fileScan.hasNextInt()) {
+            for (int r = 0; r < 9; r++) {
+                for (int c = 0; c < 9; c++) {
+                    grid[r][c] = fileScan.nextInt();
+                }
+            }
+        }
+        //find first unsolved square
+        int startingRow = 0;
+        int startingCol = 0;
+        
+        while (grid[startingRow][startingCol] != 0) {
+            startingRow = startingRow + (startingCol / 8) % 9;
+            startingCol = (startingCol % 8) + 1;
+        }
+        
+        System.out.println(solvePuzzle(grid, startingRow, startingCol, 1));
+        
+        printGrid(grid);
+    }
+    
+    public static boolean solvePuzzle(int[][] grid, int rowPos, int colPos, int start) {
+        if (rowPos > 8 || colPos > 8 || grid[rowPos][colPos] > 0)
+            return true;
+        else {
+            HashSet<Integer> invalidSolutions = getInvalidSolutions(grid, rowPos, colPos);
+            
+            if (invalidSolutions.size() == 9) {
+                grid[rowPos][colPos] = 0;
+                return false;
+            }
+            for (int i = start; i < 10; i++) {
+                if (i > 9) {
+                    //bad solution found
+                    return false;
+                }
+                
+                else if (!invalidSolutions.contains(i)) {
+                    grid[rowPos][colPos] = i;
+                    printGrid(grid);
+
+                    //find next 0
+                    int nextRow = rowPos + (colPos / 8) % 9;
+                    int nextCol = (colPos + 1) %9;
+                    
+                    while (grid[nextRow%9][nextCol%9] != 0) {
+                        nextRow = nextRow + (nextRow / 8) % 9;
+                        nextCol = (nextCol + 1) %9;
+                   }
+                    
+                    System.out.println("solving [" + nextRow + "][" + nextCol + "]");
+                    
+                    if (!solvePuzzle(grid, nextRow, nextCol, 1)) {
+                        grid[nextRow][nextCol] = 0;
+                       if (!solvePuzzle(grid, rowPos, colPos, i+1)){
+                           grid[rowPos][colPos] = 0;
+                       }
+                    }    
+                        
+                }
+    }
+        }
+        return true;
+    }
+    
+    public static HashSet<Integer> getInvalidSolutions(int[][] grid, int rowPos, int colPos) {
+        HashSet<Integer> solutions = new HashSet<Integer>(8);
+        
+        //all digits in current row:
+        for (int i = 0; i < 9; i++) {
+            solutions.add(grid[i][colPos]);
+        }
+        //all digits in current column:
+        for (int i = 0; i < 9; i++) {
+            solutions.add(grid[rowPos][i]);
+        }
+        
+        //all digits in current 3x3 box:
+        int boxRowStart = rowPos / 3 * 3;
+        int boxColStart = colPos / 3 * 3;
+        
+        for (int i = boxRowStart; i < boxRowStart + 2; i++) {
+            solutions.add(grid[i][boxColStart]);
+            solutions.add(grid[i][boxColStart+1]);
+            solutions.add(grid[i][boxColStart+2]);
+        }
+        solutions.remove(0);
+        return solutions;
+    }
+    
+    public static void printGrid(int[][] grid) {
+        for (int r = 0; r < 9; r++) {
+            for (int c = 0; c < 9; c++) 
+                System.out.print(grid[r][c] + " ");
+            System.out.println();
+        }
+                System.out.println();
+    }
+    
+    public static Scanner makeFileScanner() {
+        //get input file and assign it to a Scanner, which is returned
+        try {
+            Scanner keybd = new Scanner(System.in);
+            System.out.println("Enter file to solve: ");
+            File input = new File(keybd.nextLine());
+            
+            return new Scanner(input);
+        } catch (Exception e) {
+            //file not found. ask for the file again
+            System.out.println("File not found: " + e.getMessage());
+            
+            return makeFileScanner();
+        }
+    }
+
+}

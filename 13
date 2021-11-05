@@ -1,0 +1,192 @@
+/**
+ * Sudoku.java
+ * This program takes in an unsolved sudoku board as a runtime argument.
+ * The board must be solvable and must have zeros in place of blank spaces
+ * it then does a depth first search for a solution to the board. when it runs 
+ * into an issue it backtracks to a point and begins again.
+ * 
+ * @author 13
+ * 
+ */
+package sudoku;
+
+import java.io.*;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
+public class Sudoku {
+
+    public int board[][];
+/**
+ * main method that initiates the program
+ * contains commented out code that was used 
+ * for testing it allows the program to take in a file
+ * through the command line rather then as a runtime arg.
+ */
+    public static void main(String[] args) {
+        Scanner keybd = new Scanner(System.in);
+        //System.out.print("Enter sudoku file: ");
+        if (args.length > 0) {
+
+            String fileName = args[0];
+            //String fileName = keybd.nextLine();
+            //System.out.println("");
+            Sudoku newGame = new Sudoku(fileName);
+            newGame.fillBoard(fileName);
+            newGame.solve(0, 0, newGame.board);
+            //option to print the finished board in the terminal
+            //newGame.printBoard();
+            try {
+                newGame.toFile(fileName);
+            } catch (IOException ex) {
+                Logger.getLogger(Sudoku.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+/**
+ * constructor for sudoku class. 
+ * simply creates an empty 9*9 array and stores off the file name
+ * @param fileName name of given boards file
+ */
+    public Sudoku(String fileName) {
+        String file = fileName;
+        board = new int[9][9];
+
+    }
+/**
+ * method that fills in the array with the given board to be solved
+ * @param argFile name of given boards file
+ */
+    public void fillBoard(String argFile) {
+        Scanner fileScan;
+        File file = new File(argFile);
+        try {
+            fileScan = new Scanner(file);
+            for (int row = 0; row < 9; row++) {
+                for (int column = 0; column < 9; column++) {
+                    board[row][column] = fileScan.nextInt();
+                }
+            }
+        } catch (FileNotFoundException ex) {
+            System.out.println("File not found");
+        }
+
+    }
+/**
+ * method that checks if the given value is a valid number
+ * to enter in that position based on what else is in that row
+ * @param row row to be checked
+ * @param num the current number being checked for placement
+ * @return true or false if it can go there based on the row
+ */
+    public boolean goodRow(int row, int num) {
+        for (int col = 0; col < 9; col++) {
+            if (board[row][col] == num) {
+                return false;
+            }
+        }
+        return true;
+    }
+/**
+ * method that checks if the given value is a valid number 
+ * to enter in that position based on what else is in that column
+ * @param col column to be checked
+ * @param num the current number being checked for placement
+ * @return  true or false if it can go there based on the row
+ */
+    public boolean goodCol(int col, int num) {
+        for (int row = 0; row < 9; row++) {
+            if (board[row][col] == num) {
+                return false;
+            }
+        }
+        return true;
+    }
+/**
+ * method that checks if the given value is a valid number
+ * to enter in that position based on the what else is in that 3*3 cell
+ * @param row current row
+ * @param col current column
+ * @param num current number being checked
+ * @return true or false if it can go there based on the current cell
+ */
+    public boolean goodCell(int row, int col, int num) {
+        row = (row / 3) * 3;
+        col = (col / 3) * 3;
+
+        for (int r = 0; r < 3; r++) {
+            for (int c = 0; c < 3; c++) {
+                if (board[row + r][col + c] == num) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+/**
+ * method that is called and called recursivly to do the actual solving of the 
+ * board
+ * @param row row to start from
+ * @param column column to start from
+ * @param cells the name of the board
+ * @return true or false if that search works. it is for it own use
+ */
+    boolean solve(int row, int column, int[][] cells) {
+        if (column == 9) {
+            column = 0;
+            if (++row == 9) {
+                return true;
+            }
+        }
+        if (cells[row][column] != 0) 
+        {
+            return solve(row, column + 1, cells);
+        }
+
+        for (int val = 1; val <= 9; ++val) {
+            if (goodRow(row, val) == true && goodCol(column, val) == true && goodCell(row, column, val) == true) {
+                cells[row][column] = val;
+                if (solve(row, column + 1, cells)) {
+                    return true;
+                }
+            }
+        }
+        cells[row][column] = 0; 
+        return false;
+    }
+/**
+ * method to print the board to the terminal
+ */
+    public void printBoard() {
+        for (int row = 0; row < 9; row++) {
+            for (int column = 0; column < 9; column++) {
+                System.out.print(board[row][column] + " ");
+            }
+            System.out.println("");
+        }
+    }
+/**
+ * method that prints the current board out to a file with the
+ * given file name + .solved
+ * @param argFileName the given filename
+ * @throws IOException 
+ */
+    public void toFile(String argFileName) throws IOException {
+
+        File file = new File(argFileName + ".solved");
+
+        BufferedWriter writer = new BufferedWriter(new FileWriter(file));
+        for (int row = 0; row < 9; row++) {
+            for (int column = 0; column < 9; column++) {
+                writer.write(board[row][column] + " ");
+
+            }
+            writer.write("\n");
+
+        }
+        writer.close();
+    }
+}

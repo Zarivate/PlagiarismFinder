@@ -1,0 +1,191 @@
+/**
+ * *****************************************************************************
+ *27
+ *CSCI 340
+ *Project 5 Sudoku
+ *
+ *This program takes in a file of integers and places them into a 9 X 9 2D array
+ * that we will consider our puzzle. The program then attempts to solve the puzzle
+ * by filling all the values = 0 with a integers from 1-9. There can be no duplicate
+ * numbers in any row, column, or 3X3 squares. This is done by the main method called
+ * solve. Solve is a recursive method that calls itself until the base case is met
+ * or it exhausts all other possibilities. The program then prints the solution to
+ * the screen and saves the solution to a file of its original name with a
+ * solved extension.
+ *
+ *
+ *****************************************************************************
+ */
+package sudoku;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+public class Sudoku {
+
+    int[][] grid;
+    String inputFile;
+
+    public Sudoku() {
+        grid = new int[9][9];
+
+    }
+
+    public static void main(String[] args) throws IOException {
+
+        Sudoku puzzle = new Sudoku();
+        Scanner fin = new Scanner(System.in);
+        System.out.println("Enter a Sudoku puzzle that you wish to be solved:");
+        puzzle.inputFile = fin.nextLine();
+        puzzle.readPuzzle(puzzle.inputFile);
+        puzzle.solve(puzzle.grid, 0, 0);
+
+    }
+
+    //Reads in the file and puts it into a 2D array called grid 
+    public int[][] readPuzzle(String fileName) throws IOException {
+
+        try (Scanner s = new Scanner(new File(fileName))) {
+            while (s.hasNext()) {
+                for (int i = 0; i < 9; i++) {
+                    for (int j = 0; j < 9; j++) {
+                        grid[i][j] = s.nextInt();
+                    }
+                }
+
+            }
+
+            s.close();
+        }
+
+        return grid;//Returns the puzzle
+
+    }// End read puzzle
+
+    //Makes an array of integers to be used by solve to replace the 0 values in the grid
+    public Integer[] getNums() {
+        ArrayList<Integer> randoms = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            randoms.add(i + 1);
+        }
+        return randoms.toArray(new Integer[9]);
+    }
+
+    //Check to see if the value is already in the row
+    public boolean inRow(int[][] board, int row, int num) {
+        for (int i = 0; i < 9; i++) {
+            if (board[row][i] == num) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
+    //Check to see if the value is already in the column
+    public boolean inCol(int[][] board, int col, int num) {
+        for (int i = 0; i < 9; i++) {
+            if (board[i][col] == num) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
+    //Check to see if the value is already in the 3X3 box
+    public boolean inBox3(int[][] board, int row, int col, int num) {
+        //Due to integer math this will give you the 3 X 3 block -  eg: 3/3 = 1, 4/3 = 1, 5/3 = 1, 6/3 = 2...
+        int beginRow = 3 * (row / 3);
+        int beginCol = 3 * (col / 3);
+
+        for (int i = beginRow; i < beginRow + 3; i++) {
+            for (int j = beginCol; j < beginCol + 3; j++) {
+
+                //The number was found
+                if (board[i][j] == num) {
+                    return true;
+                }
+
+            }
+        }
+
+        return false;
+    }
+
+    //The method that does most of the work calling the other methods to solve the puzzle
+    public boolean solve(int[][] board, int row, int col) throws IOException {
+
+        //The base case when we run off the index value for row.
+        if (row == 9) {
+            printBoard(board);
+            writeFile(board);
+            return true;
+        }
+
+        // If there is already a value in place 
+        if (board[row][col] != 0) {
+
+            //Advance to the next position in the grid recursively
+            if (solve(board, col == 8 ? (row + 1) : row, (col + 1) % 9)) { // mod 9 keeps from running off the array returning 0 - 8
+
+                return true;
+            }
+
+        } else { //The value of the cell is 0
+            Integer[] numbers = getNums(); //Get a number to try
+            for (int i = 0; i < 9; i++) {
+
+                if (!inRow(board, row, numbers[i]) && !inCol(board, col, numbers[i]) && !inBox3(board, row, col, numbers[i])) { //If the number is not in the row, col, or square
+                    board[row][col] = numbers[i];//Add the value
+
+                    if (solve(board, col == 8 ? (row + 1) : row, (col + 1) % 9)) { //Advance to the next position in the grid
+                        return true;
+
+                    }//End inner if 
+
+                }//End outer if
+//                
+            }//End for loop
+            board[row][col] = 0;
+            return false; //Brings me back to the else statement to try a different value
+        }//End else
+
+        return false;
+    }//End solve
+
+    //A simple print method for printing a board.
+    public void printBoard(int[][] board) {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                System.out.print(board[i][j] + " ");
+            }
+            System.out.println();
+
+        }
+
+    }
+    //Writes the solved board to a file with the same name as the input file except the extension is .solved
+
+    public void writeFile(int[][] board) throws IOException {
+
+        FileWriter fileOut = new FileWriter(inputFile + ".solved");
+
+        try (BufferedWriter output = new BufferedWriter(fileOut)) {
+            for (int i = 0; i < 9; i++) {
+                for (int j = 0; j < 9; j++) {
+                    output.write(String.valueOf(board[i][j] + " "));
+
+                }
+                output.newLine();
+            }
+            output.close();
+        }
+
+    }
+
+}//End of Sudoku class

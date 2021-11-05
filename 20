@@ -1,0 +1,213 @@
+package sudoku;
+
+import java.io.*;
+import java.util.Scanner;
+
+/**
+ *
+ * @author 20
+ */
+public class Sudoku {
+
+    // string to hold solved sudoku puzzle filename
+    public String solvedFilename;
+    
+    // array which will hold the unsolved sudoku puzzle
+    public int[][] puzzleArray = new int[9][9];
+
+    /**
+     * Method for checking a row within the unsolved sudoku puzzle array.
+     * 
+     * Only one of each number (1-9) may exist in a row of a sudoku puzzle. 
+     * This method will check to make sure that the rule remains true for 
+     * our puzzle. If the current number exists in the row, return false.
+     * Otherwise return true.
+     * 
+     * @param row       Current row of the array being checked.
+     * @param num       Number to be checked if it exists in the row.
+     * @return          Returns false if number exists in the row.
+     *                  Returns true if number does not exist in the row.
+     */
+    public boolean checkRow(int row, int num) {
+        for (int col = 0; col < 9; col++) {
+            if (puzzleArray[row][col] == num) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Method for checking a column within the unsolved sudoku puzzle array.
+     * 
+     * Only one of each number (1-9) may exist in a column of a sudoku puzzle.
+     * This method will check to make sure that the rule remains true for 
+     * our puzzle. If the current number exists in the column, return false.
+     * Otherwise return true.
+     * 
+     * @param col       Current column of the array being checked.
+     * @param num       Number to be checked if it exists in the column.
+     * @return          Returns false if number exists in the column.
+     *                  Returns true if number does not exist in the column.
+     */
+    public boolean checkCol(int col, int num) {
+        for (int row = 0; row < 9; row++) {
+            if (puzzleArray[row][col] == num) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Method for checking a 3x3 Square of values within the sudoku puzzle array.
+     * 
+     * Only one of each number may exist in the "square" being checked. If
+     * the number being checked exists the value "false" will be returned,
+     * otherwise the method returns true stating the value does not exist in
+     * the current square.
+     * 
+     * @param row       Current row of the array being checked.
+     * @param col       Current column of the array being checked.
+     * @param num       Number to be checked if it exists in the square.
+     * @return          Returns false if number exists in the square.
+     *                  Returns true if number does not exist in the square.
+     */
+    public boolean checkSquare(int row, int col, int num) {
+        // Will give current row and column of the square.
+        row = (row / 3) * 3;
+        col = (col / 3) * 3;
+
+        // For loop to step through the square. r = rows c = columns
+        for (int r = 0; r < 3; r++) {
+            for (int c = 0; c < 3; c++) {
+                if (puzzleArray[row + r][col + c] == num) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Steps through the unsolved sudoku array and attempts to solve.
+     * 
+     * Uses rows and columns to keep track of where the current value is. This
+     * method uses recursion, if a value is found to be not possible for the
+     * current puzzle it will return to previous values until a correct
+     * solution is found. When the method reaches the end of the array the
+     * puzzle is solved. This method has help from three "check" methods
+     * checkRow, checkCol, and checkSquare which will assist in 
+     * solving the puzzle.
+     * 
+     * @param row       Used as a marker for the current row.
+     * @param col       Used as a marker for the current column. 
+     * @throws IOException 
+     */
+    public void guess(int row, int col) throws IOException {
+        
+        if (row >= puzzleArray.length) {
+            try (PrintWriter output = 
+                    new PrintWriter(new FileWriter(solvedFilename))) {
+                
+                System.out.println();
+                System.out.println("***Solved Sudoku Puzzle***");
+                
+                // For loop to step through the unsolved array.
+                for (int[] puzzleArray1 : puzzleArray) {
+                    for (int j = 0; j < puzzleArray.length; j++) {
+                        
+                        System.out.print(puzzleArray1[j] + " ");
+                        
+                        // Outputs the array to the "solved" file.
+                        output.print(puzzleArray1[j]);
+                        output.print(" ");
+                    }
+                    output.println();
+                    System.out.println();
+                }
+            }
+            System.exit(0);
+        }
+        // If a number exists at the current position that is not 0
+        if (puzzleArray[row][col] != 0) {
+
+            // Recursive call to next column.
+            if (col < 8) 
+                guess(row, col + 1);
+ 
+            // Recursive call to next row.
+            else 
+                guess(row + 1, 0);  
+
+        } 
+        else {
+            // For loop to find a number for the current position if value = 0.
+            for (int i = 1; i < 10; i++) {
+
+                // When true, the position of the grid is set to the value i.
+                if (checkRow(row, i) 
+                        && checkCol(col, i) 
+                        && checkSquare(row, col, i)) {
+                    
+                    puzzleArray[row][col] = i;
+                    
+                    // Recursive call to next column.
+                    if (col < 8) 
+                        guess(row, col + 1);
+
+                    // Recursive call to next row.
+                    else 
+                        guess(row + 1, 0);
+
+                }
+            }
+            // Sets the current position to 0;
+            puzzleArray[row][col] = 0;
+        }
+    }
+
+    /**
+     * Method to help fill out the unsolved array of sudoku puzzle values.
+     * 
+     * Uses a for loop to step through the file and add values to the
+     * unsolved array. Sets the solved filename for later.
+     * 
+     * @param filename          File containing unsolved sudoku puzzle.
+     * @throws FileNotFoundException 
+     */
+    public void setPuzzleArray(File filename) throws FileNotFoundException {
+        Scanner input = new Scanner(filename);
+        
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                puzzleArray[i][j] = input.nextInt();
+            }
+        }
+        solvedFilename = filename + ".solved";
+    }
+    
+    /**
+     * Sets up a new sudoku puzzle to be solved using file in parameter.
+     * 
+     * @param args
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
+    public static void main(String[] args) throws FileNotFoundException, IOException {
+        
+        Sudoku newPuzzle = new Sudoku();
+        String filename; 
+       
+	// Sets filename to first argument
+	filename = args[0];
+
+        File unsolvedFile = new File(filename);
+        
+        // Calls set method to fill an array with the unsolved puzzle.
+        newPuzzle.setPuzzleArray(unsolvedFile);
+        
+        // Begins guessing solutions from the 0,0 position of unsolved puzzle.
+        newPuzzle.guess(0, 0);
+    }
+}

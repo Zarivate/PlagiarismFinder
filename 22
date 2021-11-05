@@ -1,0 +1,331 @@
+package sudoku;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Scanner;
+
+/**
+ * Sudoku assignment.
+ *
+ * Due April 18th
+ *
+ * @author 22
+ */
+public class Sudoku {
+
+    //region Properties
+    static final int NUM_COL = 9;
+    static final int NUM_ROW = 9;
+    static final int NUM_SECTION_ROW = 3;
+    static final int NUM_SECTION_COL = 3;
+    static String filePath;
+    //endregion
+
+    //region Entry point
+    public static void main(String[] args) {
+        int[][] board = parseFile(args[0]);
+        solve(board);
+    }
+    //endregion
+
+    //region File IO
+
+    /**
+     * Parses in the filepath from the command line, turns it into a file,
+     * and then turns that into the 2D array of the puzzle that the program uses.
+     * @param filename
+     * @return The puzzle board as a 2D array.
+     */
+    private static int[][] parseFile(String filename) {
+        filename = "./" + filename;
+        filePath = filename;
+        File file = new File(filename);
+
+        Scanner scan = null;
+        try {
+            scan = new Scanner(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        int[][] board = new int[NUM_ROW][NUM_COL];
+        int currentRow = 0;
+
+        while(scan.hasNext()) {
+            String[] line = scan.nextLine().split(" ");
+            int[] numbers = new int[line.length];
+            for(int i = 0; i < line.length; i++) {
+                numbers[i] = Integer.parseInt(line[i]);
+            }
+
+            if(numbers.length < 8) {
+                break;
+            }
+            board[currentRow] = numbers;
+            currentRow++;
+        }
+
+        return board;
+    }
+
+    /**
+     * Creates the solved file with a .solved extension at the end.
+     * @param solvedBoard
+     */
+    private static void writeSolvedFile(int[][] solvedBoard) {
+        filePath = filePath + ".solved";
+
+        File solvedFile = new File(filePath);
+        FileWriter writer = null;
+        try {
+            solvedFile.createNewFile();
+            writer = new FileWriter(solvedFile);
+
+            for(int row = 0; row < NUM_ROW; row++) {
+                for(int col = 0; col < NUM_COL; col++) {
+                    if(col == NUM_COL - 1) {
+                        writer.write(solvedBoard[row][col] + "");
+                    } else {
+                        writer.write(solvedBoard[row][col] + " ");
+                    }
+                }
+                if (row != NUM_ROW - 1) {
+                    writer.write("\n");
+                }
+            }
+
+            writer.flush();
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+    //endregion
+
+
+    //region Solve puzzle
+
+    /**
+     * The recursive control loop that solves the puzzle. If a puzzle is not solved,
+     * it generates every next possibility for that puzzle, and spawns off a new solve
+     * method with that new board. Quits the program when done.
+     * @param board
+     */
+    private static void solve(int[][] board) {
+        //printBoard(board);
+        if(isSolved(board)) {
+            printBoard(board);
+            writeSolvedFile(board);
+            System.exit(0);
+        } else {
+            boolean foundEmptySpace = false;
+            int row = 0;
+            int col = 0;
+
+            for (int i = 0; i < NUM_ROW; i++) {
+                for (int k = 0; k < NUM_COL; k++) {
+                    if (board[i][k] == 0) {
+                        foundEmptySpace = true;
+                        col = k;
+                        break;
+                    }
+                }
+                if(foundEmptySpace) {
+                    row = i;
+                    break;
+                }
+            }
+
+            int[] possibilities = getPossibilities(board, row, col);
+
+            for (int i = 0; i < possibilities.length; i++) {
+                if(possibilities[i] != 0) {
+                    board[row][col] = i + 1;
+                    solve(board);
+                    board[row][col] = 0;
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks every possibility for a certain space, and returns an array
+     * of those possibilites to be spawned off by the control method.
+     * @param board
+     * @param row
+     * @param col
+     * @return The possibilites as an int array.
+     */
+    private static int[] getPossibilities(int[][] board, int row, int col) {
+        int[] possibilities = new int[9];
+
+        for(int i = 0; i < possibilities.length; i++) {
+            int[][] copy = board;
+            copy[row][col] = i + 1;
+
+            if(!rulesBroken(copy, row, col)) {
+                possibilities[i] = 1;
+            } else {
+                possibilities[i] = 0;
+            }
+            copy[row][col] = 0;
+        }
+
+        return possibilities;
+    }
+    //endregion
+
+
+    //region Check board
+
+    /**
+     * Checks if the board is solved. If it is full, then it must have been solved,
+     * so it returns true if it sees that there are no zeros. Every step up until being
+     * filled has been checked by the rulesBroken() method so we can be sure that it is
+     * solved if full.
+     * @param board
+     * @return
+     */
+    private static boolean isSolved(int[][]board) {
+
+        if(board[8][8] != 0) {
+            for(int row = 0; row < NUM_ROW; row++) {
+                for(int col = 0; col < NUM_COL; col++) {
+                    if(board[row][col] == 0) {
+                        return false;
+                    }
+                }
+            }
+        } else {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if the rules are broken if the new number is inserted at some
+     * row and column. Checks if the new number breaks the row, column,
+     * or section rule.
+     * @param board
+     * @param row
+     * @param col
+     * @return Whether or not a rule has been broken.
+     */
+    private static boolean rulesBroken(int[][] board, int row, int col) {
+        int[] entireRow = board[row];
+        if(!checkRowOrColumn(entireRow)) {
+            return true;
+        }
+
+        int[] entireColumn = new int[9];
+        for(int i = 0; i < NUM_ROW; i++) {
+            entireColumn[i] = board[i][col];
+        }
+
+        if(!checkRowOrColumn(entireColumn)) {
+            return true;
+        }
+
+        int[][] section = new int[NUM_SECTION_ROW][NUM_SECTION_COL];
+        int rowSection = row/3;
+        int colSection = col/3;
+
+        for(int i = 0; i < NUM_SECTION_ROW; i++) {
+            for(int k = 0; k < NUM_SECTION_COL; k++) {
+                section[i][k] = board[(3 * rowSection) + i][(3 * colSection) + k];
+            }
+        }
+
+        if(checkSection(section)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks a section by putting all of its elements
+     * into an array, and calling containsDuplicate().
+     * As always, the zeros are ignored.
+     * @param board
+     * @return If the sections contains duplicates
+     */
+    private static boolean checkSection(int[][] board) {
+        int[] section = new int[9];
+        int i = 0;
+
+        for(int row = 0; row < NUM_SECTION_ROW; row++) {
+            for (int col = 0; col < NUM_SECTION_COL; col++) {
+                section[i] = board[row][col];
+                i++;
+            }
+        }
+
+        return containsDuplicates(section);
+    }
+
+    /**
+     * Checks a row or column by calling containsDuplicates().
+     * As always, zeros are ignored.
+     * @param line
+     * @return Whether or not the line is valid.
+     */
+    private static boolean checkRowOrColumn(int[] line) {
+        return !containsDuplicates(line);
+    }
+    //endregion
+
+    //region Helpers
+
+    /**
+     * Checks if the array contains duplicates. Zeros are ignored,
+     * as they will be filled out later.
+     * @param line
+     * @return
+     */
+    private static boolean containsDuplicates(int[] line) {
+        Integer[] integerArray = new Integer[line.length];
+        for(int i = 0; i < line.length; i++) {
+            integerArray[i] = line[i];
+        }
+
+        integerArray = removeAllZeros(integerArray);
+        return new HashSet<Integer>(Arrays.asList(integerArray)).size() != integerArray.length;
+    }
+
+    public static Integer[] removeAllZeros(Integer[] original){
+        ArrayList<Integer> temp = new ArrayList<>(Arrays.asList(original));
+        while(temp.contains(new Integer(0))) {
+            temp.remove(new Integer(0));
+        }
+
+        Integer[] result = new Integer[temp.size()];
+        result = temp.toArray(result);
+        return result;
+    }
+
+    private static void printBoard(int[][] board) {
+        for (int i = 0; i < NUM_ROW; i++) {
+            if (i % 3 == 0 )
+                System.out.println(" -----------------------");
+            for (int j = 0; j < NUM_COL; j++) {
+                if (j % 3 == 0)
+                    System.out.print("| ");
+                if (board[i][j] == 0)
+                    System.out.print("x ");
+                else
+                    System.out.print(board[i][j] + " ");
+            }
+            System.out.print("|");
+            System.out.println();
+        }
+        System.out.println(" -----------------------");
+    }
+    //endregion
+}

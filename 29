@@ -1,0 +1,152 @@
+package sudoku;
+
+import java.io.*;
+import java.util.*;
+
+/**
+ * @author 29
+ *
+ * This program solves a game of sudoku.
+ */
+public class Sudoku {
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+
+        int[][] grid = new int[9][9];
+
+        Scanner input = new Scanner(System.in);
+        System.out.print("Enter the name of a file: ");
+        String filename = input.nextLine();
+        String outputFileName = filename;
+        outputFileName = outputFileName.replace(".sdk", ".solved");
+        File outputFile = new File(outputFileName);
+
+        try {
+
+            File file = new File(filename);
+            Scanner in = new Scanner(file);
+            while (in.hasNext()) {
+
+                for (int row = 0; row < 9; row++) {
+                    for (int column = 0; column < 9; column++) {
+                        grid[row][column] = in.nextInt();
+
+                    }
+                }
+
+            }
+
+            in.close();
+        } catch (Exception e) {
+            System.out.println("Error");
+        }
+
+        solve(grid, 0, 0);
+
+        for (int row = 0; row < 9; row++) {
+            for (int col = 0; col < 9; col++) {
+                System.out.printf("%2d", grid[row][col]);
+            }
+            System.out.println();
+        }
+
+        try {
+            PrintWriter pw = new PrintWriter(outputFile);
+            for (int row = 0; row < 9; row++) {
+                for (int col = 0; col < 9; col++) {
+                    pw.printf("%2d", grid[row][col]);
+                }
+                pw.println();
+            }
+
+            pw.close();
+        } catch (Exception e) {
+            System.out.println("Error");
+        }
+
+    }
+
+    /**
+     * This method solves a soduku puzzle.
+     *
+     * @param row row in the 2D array
+     * @param column column in the 2D array
+     * @return a boolean if the puzzle is complete.
+     */
+    public static boolean solve(int[][] grid, int row, int column) {
+        if (column == 9) {
+            return true;
+        }
+        if (grid[row][column] != 0) {
+            if (row < 8) {
+                return solve(grid, row + 1, column);
+            } else if (column <= 8) {
+                return solve(grid, 0, column + 1);
+            } else {
+                return true;
+            }
+        }
+        for (int i = 1; i <= 9; i++) {
+            if (legal(grid, row, column, i) == true) {
+                grid[row][column] = i;
+                if (row < 8) {
+                    if (solve(grid, row + 1, column) == true) {
+                        return true;
+                    }
+                } else if (column <= 8) {
+                    if (solve(grid, 0, column + 1) == true) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
+                grid[row][column] = 0;
+            }
+
+        }
+        grid[row][column] = 0;
+
+        return false;
+
+    }
+
+    /**
+     * This method decides if a move is legal in the soduku board.
+     *
+     * @param row current row in the board
+     * @param col current column in the board
+     * @param val current value that is being checked.
+     * @return a boolean whether the move is legal or not.
+     */
+    public static boolean legal(int[][] grid, int row, int col, int val) {
+
+        for (int i = 0; i < 9; i++) { //Check column
+            if (val == grid[i][col]) {
+                return false;
+            }
+        }
+
+        for (int j = 0; j < 9; j++) { //Check row
+            if (val == grid[row][j]) {
+                return false;
+            }
+        }
+
+        int rowOffset = (row / 3) * 3;
+        int colOffset = (col / 3) * 3;
+
+        for (int m = 0; m < 3; m++) {   // Check square
+            for (int n = 0; n < 3; n++) {
+                if (val == grid[rowOffset + m][colOffset + n]) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+}

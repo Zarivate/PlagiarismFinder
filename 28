@@ -1,0 +1,172 @@
+package sudoku;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Scanner;
+import java.util.stream.IntStream;
+
+/**
+ * Solves a Sudoku puzzle
+ *
+ * @author 28
+ */
+public class Sudoku {
+
+    /**
+     * The board
+     */
+    private int[][] grid;
+
+    /**
+     * Scanner
+     */
+    private static Scanner in = new Scanner(System.in);
+
+    /**
+     * Constructor
+     */
+    public Sudoku() {
+        this.grid = new int[9][9];
+    }
+
+    /**
+     * Run the program
+     *
+     * Checks to see if any input was passed in though command line,
+     * if not then the user is prompted for a filename
+     *
+     * @param args Command line args
+     */
+    public static void main(String[] args) {
+        if  (args.length == 0) {
+            System.out.print("Enter in a file: ");
+            new Sudoku().run(in.next());
+        } else {
+            new Sudoku().run(args[0]);
+        }
+    }
+
+    /**
+     * The main driver of the program
+     *
+     * @param filename {@link String}
+     */
+    private void run(String filename) {
+        this.populateGrid(filename);
+        this.solve(0, 0);
+        this.save(filename);
+    }
+
+    /**
+     * Solves the board recursively
+     * @param row       The current row
+     * @param column    The current column
+     * @return boolean
+     */
+    private boolean solve(int row, int column) {
+        int nextCol = (column + 1) % 9;
+        int nextRow = column == 8 ? (row + 1) : row;
+        if (row == 9) {
+            return true;
+        } else if (this.grid[row][column] != 0) {
+            return this.solve(nextRow, nextCol);
+        } else {
+            int[] range = IntStream.range(1, 10).toArray();
+            for (int i = 0; i < 9; i++) {
+                if (!this.isValid(row, column, range[i]) && !this.checkBox(row, column, range[i])) {
+                    this.grid[row][column] = range[i];
+                    if (solve(nextRow, nextCol)) {
+                        return true;
+                    } else {
+                        this.grid[row][column] = 0;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check the row and column if the given value is valid
+     *
+     * @param row    Index of the row
+     * @param column Index of the column
+     * @param check  The value to check for a given row nd column
+     * @return boolean
+     */
+    private boolean isValid(int row, int column, int check) {
+        for (int i = 0; i < 9; i++) {
+            if (i != column && this.grid[row][i] == check) {
+                return true;
+            }
+            if (i != row && this.grid[i][column] == check) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check the entire 3x3 box for validity
+     *
+     * @param row    Index of the row
+     * @param column Index of the column
+     * @return boolean
+     */
+    private boolean checkBox(int row, int column, int check) {
+        int tempRow = row / 3 * 3;
+        int tempColumn = column / 3 * 3;
+
+        for (int i = tempRow; i < tempRow + 3; i++) {
+            for (int j = tempColumn; j < tempColumn + 3; j++) {
+                if (!(i == row && j == column) && this.grid[i][j] == check) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Fill the sudoku board from the file
+     *
+     * @param filename The name of the file
+     */
+    private void populateGrid(String filename) {
+        String line;
+        int c = 0;
+        try (BufferedReader br = new BufferedReader(new FileReader(filename))) {
+            while ((line = br.readLine()) != null) {
+                String[] row = line.split(" ");
+                for (int i = 0; i < row.length; i++) {
+                    this.grid[c][i] = Integer.parseInt(row[i]);
+                }
+                c++;
+            }
+        } catch (IOException e) {
+            System.err.println(String.format("Error reading in file: %s", e.getMessage()));
+        }
+    }
+
+    /**
+     * Write the solved Sudoku to a file
+     *
+     * @param filename The original filename
+     */
+    private void save(String filename) {
+        final int bound = this.grid[0].length;
+
+        try (PrintWriter out = new PrintWriter(filename + ".solved")) {
+            for (int[] board : this.grid) {
+                for (int j = 0; j < bound; j++) {
+                    out.print(String.format("%d ", board[j]));
+                }
+                out.println();
+            }
+        } catch (IOException e) {
+            System.err.println(String.format("Error reading in file: %s", e.getMessage()));
+        }
+    }
+}

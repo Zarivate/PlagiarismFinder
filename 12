@@ -1,0 +1,217 @@
+package sudoku;
+
+import java.io.*;
+import java.util.*;
+
+/**
+ * Sudoku program will solve Sudoku puzzles with recursion. The initial grid will be
+ * read in from a file. The file will have the format of one row of data per line,
+ * with spaces between the entries. The program will solve the sudoku file and create
+ * the file <inputFilename>.solved that contains the solution for the sudoku with
+ * the same format as the problem file.
+ * 
+ * @author 12
+ */
+public class Sudoku {
+    //declare grid as 2D array
+    public static int grid[][];
+
+    /**
+     * Table class contains constructor
+     */
+    public static class Table {
+        
+        //declare row and col
+        int row;
+        int col;
+
+        /**
+         * This is constructor for table
+         * @param row
+         * @param col
+         */
+        public Table(int row, int col) {
+            this.row = row;
+            this.col = col;
+        }
+    }
+
+    /**
+     * This method checks if the value is valid for that spot
+     * @param spot the spot (location)
+     * @param value the value in spot
+     * @return returns true if there is no values in row and column
+     */
+    public static boolean isValid(Table spot, int value) {
+        
+        //checks if the spot that has the value already
+        if (grid[spot.row][spot.col] != 0) {
+            System.err.println("This spot already has a value");
+        }
+
+        //for loop checks if the value is in the present row
+        for (int i = 0; i < 9; i++) {
+            if (grid[spot.row][i] == value) {
+                return false;
+            }
+        }
+
+        //for loop checks if the value is in the present column
+        for (int i = 0; i < 9; i++) {
+            if (grid[i][spot.col] == value) {
+                return false;
+            }
+        }
+
+        //this calculates (r1,c1) and (r2,c2) to get the grid
+        int r1 = 3 * (spot.row / 3);
+        int c1 = 3 * (spot.col / 3);
+        int r2 = r1 + 2;
+        int c2 = c1 + 2;
+
+        //this for loops check if the value is in the grid
+        for (int i = r1; i <= r2; i++) {
+            for (int j = c1; j <= c2; j++) {
+                if (grid[i][j] == value) {
+                    return false;
+                }
+            }
+        }
+
+        //returns true if value is not present in row and column
+        return true;
+    }
+
+    /**
+     * This method will get the next spot to solve sudoku
+     * @param current the current spot
+     * @return returns next spot
+     */
+    public static Table nextSpot(Table current) {
+
+        //declare and set row and column
+        int row = current.row;
+        int col = current.col;
+
+        //increment column
+        col++;
+        
+        //if column is greater than 8, go to next column and increment row
+        if (col > 8) {
+            col = 0;
+            row++;
+        }
+        
+        //if row is grater than 8, return null
+        if (row > 8) {
+            return null;
+        }
+        Table next = new Table(row, col);
+        return next;
+    }
+
+    /**
+     * This method will solve the sudoku puzzle recursively.
+     * @param current current location
+     * @return returns true if sudoku is solved and false if not
+     */
+    public static boolean solve(Table current) {
+
+        //if the current location is null, it reached end of the file
+        if (current == null) {
+            return true;
+        }
+
+        //if there is value, move to next location
+        if (grid[current.row][current.col] != 0) {
+            return solve(nextSpot(current));
+        }
+
+        //this for loop will assign the correct values to each location
+        for (int i = 1; i <= 9; i++) {
+            boolean valid = isValid(current, i);
+
+            if (!valid)
+            {
+                continue;
+            }
+
+            //this assigns the value
+            grid[current.row][current.col] = i;
+
+            //move to next spot
+            boolean solved = solve(nextSpot(current));
+            
+            //if solved return true, else continue solving
+            if (solved) {
+                return true;
+            } else {
+                grid[current.row][current.col] = 0; 
+            }
+        }
+
+        //returns false if sudoku puzzle is not solved
+        return false;
+    }
+
+    /**
+     * This method will print solved sudoku puzzle
+     * @param grid 2D array
+     * @param file file that is read
+     */
+    public static void printSudoku(int grid[][], File file) {
+        
+        //this will create .solved file 
+        try(Writer writer = new BufferedWriter(new OutputStreamWriter(
+                new FileOutputStream(file.getName()+ ".solved"), "utf-8"))){
+        
+        //this for loops will write values of sudoku    
+        for (int row = 0; row < 9; row++) {
+            for (int col = 0; col < 9; col++) {
+                    writer.write(grid[row][col] + " ");
+            }
+            writer.write("\n");
+        }
+                }catch(IOException ex){
+        }
+    }
+    
+    /**
+     * This method will prompt user to enter sudoku fileName that the user desires
+     * to solve.
+     * @param args
+     * @throws java.io.FileNotFoundException
+     */
+    public static void main(String[] args) throws FileNotFoundException {
+        int counter = 0;
+        Scanner keyboard = new Scanner(System.in);
+        System.out.println("Please enter your sudoku fileName (fileName.sdk): ");
+        String fileName = keyboard.next();
+        File file = new File(fileName);    
+        Scanner input = new Scanner(file);
+        Scanner count = new Scanner(file);
+        int temp = 0;
+        while (input.hasNextInt()) {
+            temp += input.nextInt();
+            counter++;
+        }
+        //reads the grids from the file
+        int arraySize = (int) Math.sqrt(counter);
+        grid = new int[arraySize][arraySize];
+        for (int i = 0; i < grid.length; i++) {
+            for (int j = 0; j < grid.length; j++) {
+                grid[i][j] = count.nextInt();
+            }
+        }
+        
+        //this checks if the sudoku puzzle can be solved or not
+        boolean solved = solve(new Table(0, 0));
+        if (!solved) {
+            System.out.println("This sudoku puzzle cannot be solved.");
+            return;
+        }
+        
+        //this calls printSudoku method to create file with solved sudoku. 
+        printSudoku(grid, file);
+    }
+}

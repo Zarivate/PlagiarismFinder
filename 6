@@ -1,0 +1,98 @@
+package sudoku;
+
+import java.io.FileReader;
+import java.util.Scanner;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
+
+/**
+ *
+ * @author 6
+ *
+ * This program solves sudoku puzzles using a depth first search algorithm.
+ */
+public class Sudoku {
+
+    //9x9 2d array which holds the values of each gridpoint in the puzzle as ints
+    private int[][] puzzle;
+
+    public Sudoku() {
+        puzzle = new int[9][9];
+    }
+
+    public static void main(String[] args) {
+        Sudoku s = new Sudoku();
+        s.run(args[0]);
+    }
+
+    public void run(String filename) {
+        try {
+            Scanner input = new Scanner(new FileReader(filename));
+            for (int i = 0; i < 81; i++) {
+                puzzle[i / 9][i % 9] = input.nextInt();
+            }
+        } catch (FileNotFoundException fnf) {
+            System.out.println("File not found.");
+        }
+
+        //Pass the top left gridpoint into solve()
+        solve(0, 0);
+
+        try {
+            RandomAccessFile out = new RandomAccessFile(filename + ".solved", "rw");
+
+            for (int i = 0; i < 81; i++) {
+                System.out.print(puzzle[i / 9][i % 9] + " ");
+                out.writeBytes(puzzle[i / 9][i % 9] + " ");
+                if ((i + 1) % 9 == 0) {
+                    System.out.println();
+                    out.writeBytes("\r\n");
+                }
+            }
+        } catch (IOException ioe) {
+            System.out.println("An ioe exception has ocurred.");
+        }
+    }
+
+    public boolean solve(int a, int b) { //Returns false if no valid number is found for a given point 
+        //For preset points
+        if (puzzle[a][b] != 0 && isValid(a, b, puzzle[a][b])) {
+            return solve(a + (b / 8), (b + 1) % 9); //Pass the next point to solve() and return outcome
+        }
+
+        //For non-preset points
+        for (int value = 1; value <= 9; value++) { //Checks int values 1-9
+            if (isValid(a, b, value)) {
+                puzzle[a][b] = value; //Set point to value if unique to its row, column, and subgrid
+                if (a == 8 && b == 8) { //The last point of the grid
+                    return true; //The puzzle is completed.
+                }
+                if (solve(a + (b / 8), (b + 1) % 9)) { //Pass the next point to solve()
+                    return true;
+                }
+            }
+        }
+        puzzle[a][b] = 0;
+        return false; //No valid value found for this point.
+    }
+
+    //Checks the needed points for the value, excluding the point itself.
+    public boolean isValid(int a, int b, int value) {
+        for (int i = 0; i <= 8; i++) {
+            if (puzzle[a][i] == value && i != b) { //Checks the row of a point
+                return false;
+            }
+            if (puzzle[i][b] == value && i != a) { //Checks the column of a point
+                return false;
+            }
+            //Checks the subgrid of a point, starting at (0,0) -> (0,1)...(2,2) 
+            if (puzzle[a - (a % 3) + (i / 3)][b - (b % 3) + (i % 3)] == value
+                    && (a - (a % 3) + (i / 3) != a || b - (b % 3) + (i % 3) != b)) {
+                return false;
+            }
+        }
+        return true; //True if no matches to value were found
+    }
+
+}

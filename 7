@@ -1,0 +1,227 @@
+/**
+ * Using a depth first search with backtracking to recursively solve a 
+ * SUDOKU puzzle from an input file containing a 9x9 grid of integer values from 
+ * 0-9 (0 is value to solve) and will write the solution to an output file.
+ * <P>
+ * @author 7
+ * @edu.uwp.cs.340.course CSCI 340 - Data Structures & Algorithms
+ * @edu.uwp.cs.340.section 001
+ * @edu.uwp.cs.340.assignment 5
+ * @bugs
+ */
+package sudoku;
+
+import java.io.*;
+import java.util.*;
+
+public class Sudoku {
+
+    // Data variables
+    public static int grid[][] = new int[9][9];
+
+    /**
+     * Class to abstract the representation of a cell. Cell => (x, y)
+     */
+    public static class Cell {
+
+        // Data variables for class cell
+        int row, col;
+
+        // Creates a cell containing a row and col position
+        public Cell(int row, int col) {
+            this.row = row;
+            this.col = col;
+        }
+
+        // Return string values in the form => "Cell: [row = x, col = y]"
+        @Override
+        public String toString() {
+            return "Cell: [row = " + row + ", col = " + col + "]";
+        }
+    }
+
+    /**
+     * Utility function to check whether value is valid for the cell
+     *
+     * @param cell - Takes in a cell to compare to a value
+     * @param value - Takes in a value that needs to be checked for validity
+     * @return - True if the value is valid, False if not valid value
+     */
+    public static boolean isValid(Cell cell, int value) {
+
+        // If value is present in row or column, return false
+        for (int i = 0; i < 9; i++) {
+            if (grid[cell.row][i] == value) {
+                return false;
+            } else if (grid[i][cell.col] == value) {
+                return false;
+            }
+        }
+
+        // To get a 3x3 grid
+        int gridRow = (cell.row / 3) * 3;
+        int gridCol = (cell.col / 3) * 3;
+
+        // If value is present in grid, return false
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                if (grid[row + gridRow][col + gridCol] == value) {
+                    return false;
+                }
+            }
+        }
+
+        // If the value is not present in row, col and 3x3 grid, return true
+        return true;
+    }
+
+    /**
+     * Takes in a current cell and increments the row, column of the current
+     * cell to get the next cell
+     *
+     * @param cur - Takes in a cell location
+     * @return - Next cell after the current cell
+     */
+    public static Cell nextCell(Cell cur) {
+        
+        // Data variables
+        int row = cur.row;
+        int col = cur.col;
+
+        // Next cell => col++
+        col++;
+
+        // Reached end of grid, go to next row
+        if (col > 8) {
+            col = 0;
+            row++;
+        }
+
+        // Reached end of grid, return null
+        if (row > 8) {
+            return null;
+        }
+        
+        // Create a new cell named next that follows the current cell
+        Cell next = new Cell(row, col);
+        return next;
+    }
+
+    /**
+     * Checks the current cell and checks validity of the values 1-9 to find a
+     * solution to the puzzle, otherwise the puzzle has no solution
+     *
+     * @param cur - Takes in a cell location
+     * @return - True if puzzle is solved, False if not solvable
+     */
+    public static boolean solve(Cell cur) {
+
+        // If the cell is null, we have reached the end
+        if (cur == null) {
+            return true;
+        }
+
+        // Skip filled cells so we can recursively continue on to next cell
+        if (grid[cur.row][cur.col] != 0) {
+            return solve(nextCell(cur));
+        }
+
+        // Check each possible value being assigned to the cell, and check 
+        // for solutions, if grid[cur] doesn't have a value then try each value
+        for (int i = 1; i <= 9; i++) {
+
+            // Check if valid, if valid, then update
+            boolean valid = isValid(cur, i);
+
+            // If i is not valid for this cell, try other values
+            if (!valid) {
+                continue;
+            }
+
+            // Assign a value 
+            grid[cur.row][cur.col] = i;
+
+            // Continue with next cell
+            boolean solved = solve(nextCell(cur));
+
+            // If solved, return true, else reset and try other values
+            if (solved) {
+                return true;
+            } else {
+                grid[cur.row][cur.col] = 0;
+            }
+        }
+
+        // If no value from 1 - 9 gives solution, return false
+        return false;
+    }
+
+    /**
+     * Prints out the puzzle as 9x9 block in a form of: 1 2 3 4 5 6 7 8 9 \n ...
+     *
+     * @param grid - Takes in every value in the grid to be printed
+     */
+    public static void printGrid(int grid[][]) {
+        for (int row = 0; row < 9; row++) {
+            for (int col = 0; col < 9; col++) {
+                System.out.print(grid[row][col] + " ");
+            }
+            System.out.println();
+        }
+    }
+
+    /**
+     * Write the solved puzzle to an output file with ".solved" concatenated at
+     * the end of the file's name
+     *
+     * @param grid - Takes in solved puzzle to write to output file
+     * @param fileName - Takes in name of the file that will be written to
+     */
+    public static void outFile(int grid[][], String fileName) {
+        try (Writer wr = new FileWriter(fileName.concat(".solved"))) {
+            for (int row = 0; row < 9; row++) {
+                for (int col = 0; col < 9; col++) {
+                    wr.write(grid[row][col] + " ");
+                }
+                if (row < 8) {
+                    wr.write("\n");
+                }
+            }
+            wr.close();
+        } catch (IOException e) {
+            System.out.println("\nThere was an input/output error: " + e);
+        }
+    }
+
+    /**
+     * Type in the puzzle that needs to be solved, will read the file,
+     * and check for solution, and then print out if solved with solution to an
+     * output file or will print out that the puzzle can not be solved
+     * 
+     * @param args - Takes in string arguments
+     */
+    public static void main(String[] args) {
+        try (Scanner inputFile = new Scanner(System.in)) {
+            System.out.println("Enter the name of your (5.sdk) file: ");
+            String fileName = inputFile.nextLine();
+            File file = new File(fileName);
+            Scanner scanner = new Scanner(file);
+            for (int rows = 0; rows < 9; rows++) {
+                for (int cols = 0; cols < 9; cols++) {
+                    grid[rows][cols] = scanner.nextInt();
+                }
+            }
+            boolean solved = solve(new Cell(0, 0));
+            if (!solved) {
+                System.out.println("SUDOKU cannot be solved.");
+                return;
+            }
+            System.out.println("SOLUTION: \n");
+            printGrid(grid);
+            outFile(grid, fileName);
+            System.out.println("\nYour new file is named: " + fileName.concat(".solved"));
+        } catch (FileNotFoundException e) {
+            System.out.println("\nYour file was not found: " + e);
+        }
+    }
+}

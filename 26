@@ -1,0 +1,189 @@
+package sudoku;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.util.Scanner;
+/**
+ * This assignment takes a sudoku file that is formatted by a 9 by 9 grid. It 
+ * then takes in the puzzle and solves it recursively. It then outputs a file
+ * of the puzzle solved.
+ * <p>
+ *
+ * @author 26
+ * @edu.uwp.cs.340.course CSCI 340 - Data Structures and Algorithms
+ * @edu.uwp.cs.340.section 001
+ * @edu.uwp.cs.340.assignment sudoku
+ * @bugs None
+ */
+public class Sudoku {
+
+    public static char [][]  puzzle = new char[9][9];
+    /**
+     * Main method that asks for the sudoku file and scans it in. Then when the
+     * puzzle is solved it prints it out to the solved file.
+     * @param args
+     * @throws FileNotFoundException 
+     */
+    public static void main(String[] args) throws FileNotFoundException {
+        Scanner input = new Scanner(System.in);
+        System.out.println("Enter sudoku file to solve: ");
+        String inputFile = input.nextLine();
+        File puzzleFile = new File("/home/student/Classes/Cs340/Sudoku/" + inputFile);
+        Scanner fileScan = new Scanner(puzzleFile);
+        String puzzleName = puzzleFile.getName() + ".solved";
+        File puzzleOutput = new File(puzzleName);
+        PrintWriter puzzleWriter = new PrintWriter(puzzleOutput);
+        
+        //for loop to run through the file and scan in the puzzle and scan in the rows
+        for (int i = 0; i < 9; i++) {
+            String temp = fileScan.nextLine(); //temp string to scan in the file.
+            for (int j = 0; j < 9; j++) { //inner loop to fill the columns
+                puzzle[i][j] = temp.charAt(j); //assign the characters to the array
+            }
+        }
+
+        boolean solved = solve(0, 0); //call solved
+        
+        //Check if the puzzle is solved
+        if (solved){
+            //for loop to print each element of the now solved puzzle to puzzleFile
+            for (int i = 0; i < 9; i++) {
+                for (int j = 0; j < 9; j++) {
+                    puzzleWriter.print(""+puzzle[i][j]); //print current index to the file.
+                }
+                puzzleWriter.print("\n");//new line once it reaches the end of a row
+                
+            }
+        }
+        puzzleWriter.close();//close printWriter.
+        
+    }
+
+    /**
+     * Method that solves the puzzle.
+     * @param row row number
+     * @param col column number
+     * @return fits if it is true or false
+     */
+    public static boolean solve(int row, int col) {
+        boolean fits = false; //instantiate fits to false
+        int i = 1; //instantiate the counter to 1
+        if (puzzle[row][col] == '0') { //if statement to check if it is a blank in the puzzle
+            //while loop to go through all options until it reaches 9 or fits
+            while (i <= 9 && fits != true) {
+                if (test(i, row, col) == true) { //call test method
+                    puzzle[row][col] = (char)(((int)'0')+i);//if it fits, assign the number to the array
+
+                    if (col == 8 && row < 8) { //if the next place to solve should go to the next line
+                        fits = solve(row + 1, 0); //call solve for the next row
+                    } else if (col < 8 && row <= 8) { //if the next place to should be the next column
+                        fits = solve(row, ((int)col + 1)); //call solve for the next column
+                    }
+                    if (col == 8 && row == 8) { //if it reaches the end of the array
+                        return true; //return true
+
+                    }
+                    if(fits==false){
+                        puzzle[row][col] = '0'; //set the position in the array back to 0
+                    }
+                } else { //if it doesn't fit
+                    puzzle[row][col] = '0'; //set the position in the array back to 0
+                }
+                i++; //increment counter
+            }
+        } else { //if the current index doesn't need to be solved
+            //while (fits != true) {
+                if (col == 8 && row <= 8) { //if the next place to solve should go to the next line
+                    fits = solve(row + 1, 0); //call solve for the next row
+                } else if (col < 8 && row <= 8) { //if the next place to should be the next column
+                    fits = solve(row, col + 1); //call solve for the next column
+                }
+                if (col == 8 && row == 8) { //if it reaches the end of the array
+                    return true; //return true
+                }
+            //}
+        }
+        return fits; //it doesn't fit in the index, return false
+
+    }
+
+    /**
+     * Method to call all the test methods.
+     * @param current
+     * @param row row number
+     * @param col column number
+     * @return true if all tests pass
+     */
+    public static boolean test(int current, int row, int col) {
+        if (testRows(current, row)) { //If it fits in the row
+            if (testCol(current, col)) { //if it fits in the column
+                if (testSquare(current, row, col)) { //if it fits in the square
+                    return true; //it fits in the current index
+                }
+            }
+        }
+        return false; //it does not fit in the current index
+    }
+
+    /**
+     * Method to test rows
+     * @param current current row
+     * @param row row number
+     * @return true if test passes.
+     */
+    public static boolean testRows(int current, int row) {
+        //for loop to run through all of the row
+        char temp =  (char)(((int)'0')+current);
+        for (int i = 0; i < 9; i++) {
+            //if the current int matches any of the numbers in the row
+            
+            if (temp == (puzzle[row][i])) {
+                return false; //if it matches any numbers in the row, return false
+            }
+        }
+        return true; //return true when it doesn't match any numbers in the row
+    }
+
+    /**
+     * Method to test the columns
+     * @param current current column
+     * @param col column number
+     * @return true if test passes.
+     */
+    public static boolean testCol(int current, int col) {
+        //for loop to run through all of the column
+        char temp =  (char)(((int)'0')+current);
+        for (int i = 0; i < 9; i++) {
+            //if the current int matches any of the numbers in the column
+            if (temp == puzzle[i][col]) {
+                return false; //if it matches any numbers in the column, return false
+            }
+        }
+        return true; //return true when it doesn't match any numbers in the column
+    }
+
+    /**
+     * Method to test the squares
+     * @param current current square
+     * @param row row number
+     * @param col column number
+     * @return true if test passes.
+     */
+    public static boolean testSquare(int current, int row, int col) {
+
+        int colStart = (col / 3) * 3; //get the first index of the column in the square
+        int rowStart = (row / 3) * 3; //get the first indec of the row in the square
+        char temp =  (char)(((int)'0')+current);
+        //for loop to run through all of the rows in the square
+        for (int i = rowStart; i < rowStart + 3; i++) {
+            //for loop to run through all of the columns in the square
+            for (int j = colStart; j < colStart + 3; j++) {
+                if (temp ==  puzzle[i][j]) { //if the index matches any other number
+                    return false; //return false if it matches any numbers
+                }
+            }
+        }
+        return true; //return true when it hasn't matched any numbers
+    }
+}

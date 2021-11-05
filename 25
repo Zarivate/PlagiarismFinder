@@ -1,0 +1,242 @@
+package sudoku;
+
+import java.io.*;
+import java.util.Scanner;
+
+/**
+ * Description:
+ * This program is able to read in a file with a Sudoku puzzle and be able to parse trhough the file and
+ * solve the puzzle using recursion and backtracking
+ *
+ * Author:
+ * 25
+ */
+public class Sudoku {
+
+    // The board for the game
+    private int[][] grid;
+
+    /**
+     * Contructr for the sudoku class that creates the 9 by 9 grid
+     */
+    public Sudoku(){
+        this.grid = new int[9][9];
+    }
+
+    public void startSolving(String filename) throws IOException {
+        this.readFile(filename);
+        this.solve(0,0);
+        //For debugging
+        //this.printGrid(filename);
+        this.saveFile(filename);
+
+    }
+
+    public static void main(String[] args) {
+        Sudoku test = new Sudoku();
+        Scanner input = new Scanner(System.in);
+        System.out.println("Please enter file : ");
+        String file = input.nextLine();
+        try {
+            test.startSolving(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * readFile takes in the name of the file and parse that file into a two dimensional integer array
+     * as the board for Sudoku. It then calls the solve method to solve the puzzle.
+     *
+     * If it cannot read or find the file it will throw an IOException
+     * @param nameOfFile
+     * @throws IOException
+     */
+
+    public void readFile(String nameOfFile) throws IOException {
+        File inputFile = new File (nameOfFile);
+        BufferedReader br = new BufferedReader(new FileReader(inputFile));
+        String line;
+        //Creating the board
+        int j = 0;
+
+        // This loop goes through the file turns the string into an array of integers
+        while((line = br.readLine()) != null){
+            line = line.replaceAll(" ","");
+            for(int i =0; i < 9; i++){
+                String c = String.valueOf(line.charAt(i));
+                this.grid[j][i] = Integer.parseInt(c);
+            }
+            j++;
+        }
+
+
+
+    }
+
+
+    /**
+     * Methtod test out if there aren't any conflicting number in a row, column or with in a 3 by 3 quadrant
+     * @param row
+     * @param col
+     * @param testNumber
+     * @return
+     */
+    public boolean test(int row, int col, int testNumber){
+        // if the number is or isn't in the column
+        boolean columnSafe = !isInColumn(col, testNumber);
+        // if the number is or isn't in the same row
+        boolean rowSafe = !isInRow(row, testNumber);
+
+        // starting point for a given 3 by 3 quadrant in the grid
+        int quadCol = col - col%3;
+        int quadRow = row - row%3;
+
+        // if the number is already in the 3 by 3 grid.
+        boolean quadrantSafe = !isInQuadrant(quadRow, quadCol, testNumber);
+
+        // if the number isn't in any of these then this will be true otherwise it will be false
+        boolean isSafe = columnSafe && rowSafe && quadrantSafe;
+        return isSafe;
+
+    }
+
+    /**
+     * Checks to see if a number is already in the column. If it is then it will return true, if not then
+     * it will return false.
+     * @param col
+     * @param testNumber
+     * @return
+     */
+    public boolean isInColumn(int col, int testNumber){
+        // goes through each element in a given column
+        for(int row = 0; row < 9 ; row++){
+            if(this.grid[row][col] == testNumber){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Checks to see if a number is already in the same row. If it is then it will return true, if not
+     * then it will return false.
+     * @param row
+     * @param testNumber
+     * @return
+     */
+    public boolean isInRow(int row, int testNumber){
+        // goes through each element in a given row and compares it with our test number.
+        for(int col = 0; col < 9; col++){
+            if(this.grid[row][col] == testNumber){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * This method actually checks to see if our test number is in the current 3 by 3 quadrant
+     * @param quadRow
+     * @param quadCol
+     * @param testNumber
+     * @return
+     */
+    public boolean isInQuadrant(int quadRow, int quadCol, int testNumber){
+        for(int row = 0; row < 3; row++){
+            int tempRow = row + quadRow;
+            for(int col = 0; col < 3; col++){
+                int tempCol = col + quadCol;
+                if(this.grid[tempRow][tempCol] == testNumber){
+                    return true;
+                }
+            }
+        }
+
+
+        return false;
+    }
+
+    /**
+     * Used meethod for debugging so that it prints the board to the console
+     * @param file
+     */
+    public void printGrid (String file){
+        for(int i = 0; i < 9; i++){
+            for(int j = 0; j < 9; j++){
+                System.out.print(this.grid[i][j] + " ");
+            }
+            System.out.println();
+        }
+
+    }
+
+    /**
+     * Saves the completed and solved puzzle to a file
+     * @param oldFileName
+     */
+    public void saveFile(String oldFileName){
+        // create the name of the file
+        String newFileName = oldFileName + ".solved";
+        try {
+            BufferedWriter output = new BufferedWriter(new FileWriter(newFileName));
+            String line;
+            // output each line one by one to the file
+            for (int i = 0; i < 9; i++){
+                line = "";
+                for (int j = 0; j < 9; j++){
+                    line = line + this.grid[i][j] + " ";
+                }
+
+                output.write(line+"\n");
+            }
+
+            if(output != null ){
+                output.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * This where most of the work gets done to actaully solve the puzzle. It goes through the board and
+     * checks out each posssible option.
+     * @param row
+     * @param col
+     * @return
+     */
+
+    public boolean solve(int row, int col){
+
+        int nextCol = (col+1)%9;
+        int nextRow = nextCol != 0 ? row : (row + 1);
+        if(row == 9){
+            return true;
+        }
+        //Checks if there is already at a certain position that is not 0, if there is a number then
+        // it checks for the next spot. This helps preserve the original numbers on the board.
+        else if(this.grid[row][col] != 0){
+            return solve(nextRow, nextCol);
+        }
+        //Go through the board and test out numbers one through nine until it finds a valid solution
+        else {
+            for (int testNumber = 1; testNumber <= 9; testNumber++) {
+                if (test(row, col, testNumber)) {
+                    this.grid[row][col] = testNumber;
+                    if (solve(nextRow, nextCol)) {
+                        return true;
+                    } else
+                        grid[row][col] = 0;
+                }
+
+            }
+        }
+
+        return false;
+
+
+    }
+
+
+}

@@ -1,0 +1,215 @@
+package sudoku;
+
+import java.io.*;
+import java.util.*;
+
+/**
+ * This program takes a sudoku puzzle and recursively solves it uses
+ * backtracking a depth first algorithm
+ *
+ * @author 11
+ */
+public class Sudoku {
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        int element;//the element to be added to the puzzle
+        int grid[][] = new int[9][9];//initialize a puzzle
+        int row = 0;//an index for the row
+        int column = 0;//an index for the column
+        String fileName;
+
+        //prompt the user for the name of the file
+        System.out.println("Enter the name of the file you would like to solve a Sudoku puzzle for: ");
+        //the name of the file you are opening
+        //Create a new scanner to recieve input
+        Scanner in = new Scanner(System.in);
+        //fileName = in.nextLine();//the file name you are opening will be entered as the next line
+        fileName = args[0];
+        //fileName = "/Users/11/125.sdk";//hard coded file name for testing purposes 
+
+        try {
+            Scanner input = new Scanner(new File(fileName));//scanner to scan each line
+
+            //while there is a next line, read the line
+            while (input.hasNextInt()) {
+                element = input.nextInt();//the current element is the nextInt
+                grid[row][column] = element;//assign the element to the current index
+                column++;//increment the column
+                if (column > 8) {
+                    column = 0;//if necessary reset the current column
+                    row++;//and go to the next row
+                }
+            }
+
+            //print initial grid
+            System.out.println("The original puzzle:");
+            writeFile(grid, fileName);
+            printBoard(grid);//call the method to print the grid
+            System.out.println();
+
+            //method call
+            System.out.println("\nThe solved puzzle:");
+            solved(grid, 0, 0);//solve the puzzle starting at the initial index
+            writeFile(grid, fileName);
+            printBoard(grid);//call the method to print the grid
+
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * This method recursively calls itself checking for legal values to be
+     * placed in the puzzle, backtracking if no values can be found
+     *
+     * @param grid the sudoku puzzle
+     * @param row the current row to check against
+     * @param column the current column to check against
+     * @return boolean dependant on if the puzzle is solved or notwe
+     */
+    public static boolean solved(int[][] grid, int row, int column) {
+        if (row == 9) {//if the row is exceeded the puzzle
+            row = 0;//reset the row number
+            if (++column == 9)//if the column increment is equal to 9
+            {
+                return true;//the puzzle is solved
+            }
+        }
+
+        if (grid[row][column] != 0)//if the current index has a value
+        {
+            return solved(grid, row + 1, column);//skip it and go to the next possible index
+        }
+        for (int val = 1; val <= 9; ++val) {//else assign a value to that index
+            if (possibleDigit(grid, row, column, val)) {//check if the value is legal
+                grid[row][column] = val;
+                if (solved(grid, row + 1, column))//if the last index is legal
+                {
+                    return true;//all others will be
+                }
+            }
+        }
+        grid[row][column] = 0;//backtrack resetting the value
+        return false;//backtrack
+    }
+
+    /**
+     * This method uses other methods to determine if a value is a legal to be
+     * used in sudoku
+     *
+     * @param grid the sudoku puzzle
+     * @param row the current row to be checked against
+     * @param column the current column to be checked against
+     * @param digit the current value to determine if it is legal
+     * @return a boolean dependat upon if it exists already, if not it is a
+     * valid digit to be used
+     */
+    public static boolean possibleDigit(int grid[][], int row, int column, int digit) {
+        //if the digit is not already in the row, column, or box
+        if (possibleInRow(grid, row, digit) && possibleInColumn(grid, column, digit) && possibleInBox(grid, row, column, digit)) {
+            return true;//it is a legal value
+        } else {
+            return false;//it is not a legal value
+        }
+    }
+
+    /**
+     * This method determines if a digit is already within the current row
+     *
+     * @param grid the sudoku puzzle
+     * @param row the current row to be checked against
+     * @param digit the digit to be checked against the current row
+     * @return a boolean dependant upon if it exists already, if not it is a
+     * valid digit to be used
+     */
+    public static boolean possibleInRow(int grid[][], int row, int digit) {
+        for (int c = 0; c < 9; c++) {//traverse against each column
+            if (grid[row][c] == digit) {//check against the same row  for every column
+                return false;//if the digit already exists it is not a legal value
+            }
+        }
+        return true;//the value does not already exists
+    }
+
+    /**
+     * This method determines if a digit is already within the current column
+     *
+     * @param grid the sudoku puzzle
+     * @param column the current column to be checked against
+     * @param digit the digit to be checked against the current column
+     * @return a boolean dependant upon if it exists already, if not it is a
+     * valid digit to be used
+     */
+    public static boolean possibleInColumn(int grid[][], int column, int digit) {
+        for (int r = 0; r < 9; r++) {//travers against each row
+            if (grid[r][column] == digit) {//check against the same column for every row
+                return false;//if the digit already exists it is not a legal value
+            }
+        }
+        return true;//the value does not already exist
+    }
+
+    /**
+     * This method determines if a digit already exists within a 3x3 grid
+     *
+     * @param grid the sudoku puzzle
+     * @param row the boundary row to be checked against
+     * @param column the boundary column to be checked against
+     * @param digit the digit to be checked if it already exists within the
+     * smaller grid
+     * @return a boolean dependant upon if it exists already, if not it is a
+     * valid digit to be used
+     */
+    public static boolean possibleInBox(int grid[][], int row, int column, int digit) {
+        row = (row / 3) * 3;//starting index for a box
+        column = (column / 3) * 3;//starting index for a box
+
+        for (int r = 0; r < 3; r++) {//check against the boundary of the row
+            for (int c = 0; c < 3; c++) {//check against the boundary of the column
+                if (grid[row + r][column + c] == digit) {//if the digit already exists it is not a legal value
+                    return false;
+                }
+            }
+        }
+        return true;//the value does not already exist
+    }
+
+    /**
+     * This method prints out the sudoku puzzle with each value printed on the
+     * corresponding row and column with spaces in between for readability
+     *
+     * @param grid the sudoku puzzle to be printed
+     */
+    public static void printBoard(int[][] grid) {
+        for (int r = 0; r < 9; r++) {
+            System.out.println();//every time their is a new row go to a new line
+            for (int c = 0; c < 9; c++) {
+                System.out.print(grid[r][c] + " ");//every time you print a column seperate it by a space
+            }
+        }
+    }
+
+    /**
+     * This method writes the solved puzzle to an output file
+     * @param grid the grid to be printed
+     * @param fileName the fileName of the file to be created with .solved appended to it
+     * @throws IOException 
+     */
+    public static void writeFile(int[][] grid, String fileName) throws IOException {
+
+        FileWriter out = new FileWriter(fileName + ".solved");//create the file to be outputed to 
+
+        try (BufferedWriter outPut = new BufferedWriter(out)) {
+            for (int row = 0; row < 9; row++) {
+                for (int column = 0; column < 9; column++) {
+                    outPut.write(String.valueOf(grid[row][column] + " "));//print the puzzle
+                }
+                outPut.newLine();//create a new line
+            }
+            outPut.close();//close the file
+        }
+    }
+}

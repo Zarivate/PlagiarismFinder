@@ -1,0 +1,123 @@
+
+import java.io.*;
+import java.util.*;
+
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+/**
+ *
+ * @author 17
+ *
+ * Known bugs: method print is poorly formated
+ *
+ */
+public class Sudoku {
+    // soudoku grid
+    public int[][] grid = new int[9][9];
+    //method loads a grid from a file 
+    public void loadGrid(File fi) throws FileNotFoundException {
+        Scanner scan = new Scanner(fi);
+        //this loop enters each value into the grid
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                grid[i][j] = scan.nextInt();
+            }
+        }
+    }
+    //method checks the row looking to see if the number has been used in that row 
+    public boolean checkRow(int row, int num) {
+        //checks here returns false if the number has been used 
+        for (int i = 0; i < 9; i++) {
+            if (grid[row][i] == num) {
+                return false;
+            }
+        }
+        return true;
+    }
+//method checks the column  looking to see if the number has been 
+    public boolean checkCol(int col, int num) {
+         //checks here returns false if the number has been used 
+        for (int i = 0; i < 9; i++) {
+            if (grid[i][col] == num) {
+                return false;
+
+            }
+        }
+        return true;
+    }
+//method checks the current "box" looking to see if the number has been 
+    public boolean checkSquare(int row, int col, int num) {
+        
+        row = (row / 3) * 3;
+        col = (col / 3) * 3;
+
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (grid[row + i][col + j] == num) {
+                    return false;
+                }
+
+            }
+        }
+
+        return true;
+
+    }
+
+    public void dfSolve(int row, int col) {
+        //if the cell has a value in it 
+        if (grid[row][col] != 0) {
+            //go to next number 
+            moveNextCell(row, col);
+        } else {
+            // else check each number 1-9 and see if it can be fit into that cell 
+            //if so then save that number in that cell for now and move on
+            for (int num = 1; num < 10; num++) {
+                if (checkRow(row, num) && checkCol(col, num) && checkSquare(row, col, num)) {
+                    grid[row][col] = num;
+                    //move on to next cell
+                    moveNextCell(row, col);
+                }
+            }
+            //once you get to a point where you can't put any number in that location 
+            // reset that cell and backtrack(return from recursive call)
+            grid[row][col] = 0;
+
+        }
+
+    }
+    //method moves to the next target cell and makes the recursive call for dfSolve
+    public void moveNextCell(int row, int col) {
+        if (col < 8) {
+            dfSolve(row, col + 1);
+            //when you finish the last row you are done this is the base case
+        } else if (row < 8) {
+            dfSolve(row + 1, 0);
+        } else {
+            print();//prints the grid when done 
+        }
+    }
+    //method prints the grid
+    public void print() {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                System.out.print(grid[i][j]);
+
+            }
+        }
+    }
+      public static void main(String[] args) throws FileNotFoundException{
+         Sudoku solver = new Sudoku();
+         System.out.println("enter file path");
+         Scanner user = new Scanner(System.in);
+         File file = new File(user.next());
+        //File file = new File(‪"C:\\Users\\matt\\Documents\\107.sdk");
+         solver.loadGrid(file);
+      //  solver.print();
+         solver.dfSolve(0, 0);
+       //  solver.print();
+     }
+}

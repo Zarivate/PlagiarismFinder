@@ -1,0 +1,186 @@
+package sudoku;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+/**
+ *
+ * @author 21
+ */
+
+/*
+ * This program uses recursion to solve a sudoku puzzle. It takes in a file that contains integers seperated
+ * by spaces in rows and columns. It parses the integers into a 2d array of integegers to represent the puzzle
+ * It then searches for all possible numbers using several methods to check to see if it is a valid number
+ * based on sudoku's rules. It does this in a BFS type of algorithm in order to solve the puzzle. It then 
+ * writes out the solution to a file. 
+ */
+public class Sudoku {
+
+    /**
+     *
+     */
+    public Sudoku(){
+        
+    }
+    
+    private static final int[][] board = new int[9][9];
+
+    /**
+     * The main method reads in a file and assigns the values to board. It then calls the
+     *  solve method to solve the puzzle and outputs the solution to a file.
+     * @param args the command line arguments
+     * @throws java.io.FileNotFoundException
+     */
+    public static void main(String[] args) throws FileNotFoundException, IOException, Exception {
+        
+        Sudoku puzzle = new Sudoku();
+        
+        //Scanner kybd = new Scanner(System.in);
+        //System.out.print("Please Enter an input file name: ");
+        //String fileName = kybd.nextLine();
+        String fileName = args[0];
+
+        BufferedReader br = new BufferedReader(new FileReader(fileName));
+         BufferedWriter bw = new BufferedWriter(new FileWriter(new File(
+                                        fileName + ".solved"), true));
+
+        for (int i = 0; i < 9; i++) {
+            String[] temp = br.readLine().trim().split(" ");
+            for (int j = 0; j < 9; j++) {
+                board[i][j] = Integer.parseInt(temp[j]);
+            }
+        }
+       
+        solve(board);
+        bw.write(print(board));
+        bw.close();
+       
+        
+    }
+
+    /**
+     * Checks if a number is a possible value for the given row
+     *
+     * @param row
+     * @param num
+     * @return
+     */
+    protected static boolean rowCheck(int row, int num) {
+        for (int col = 0; col < 9; col++) {
+            if (board[row][col] == num) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if a number is a possible value for the given column
+     *
+     * @param col
+     * @param num
+     * @return
+     */
+    protected static boolean colCheck(int col, int num) {
+        for (int row = 0; row < 9; row++) {
+            if (board[row][col] == num) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Checks if a number is an possible value for the 3 x 3 box
+     *
+     * @param row
+     * @param col
+     * @param num
+     * @return
+     */
+    protected static boolean boxCheck(int row, int col, int num) {
+        row = (row / 3) * 3;
+        col = (col / 3) * 3;
+
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[row + i][col + j] == num) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The solve method walks through the board looking for blank spaces represented by 0.
+     *  It then checks all possible solutions using BFS and making sure it is a valid number by calling on the
+     *  isValid method. If a valid number is found the blank space is changed to the valid number. If one is 
+     *  not found it is changed back to zero and a new possible solution is checked. It goes through the
+     *  entire board using recursion. 
+     * @param s
+     * @return
+     */
+    public static boolean solve(int[][] s) {
+
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            if (s[i][j] != 0) {
+                continue;
+            }
+            for (int num = 1; num <= 9; num++) {
+                if (isValid(num, i, j)) {
+                    s[i][j] = num;                    
+                    if (solve(s)) {
+                        return true;
+                    } else {
+                        s[i][j] = 0;
+                    }
+                }
+            }
+            return false;
+        }
+    }
+    return true;
+}
+
+    /**
+     * isValid checks the number by calling boxCheck, colCheck and rowCheck.
+     *  If all three come back as true then it is a valid number.
+     * @param num
+     * @param row
+     * @param col
+     * @return
+     */
+    public static boolean isValid(int num, int row, int col){
+        return (boxCheck(row,col,num) && colCheck(col, num) && rowCheck(row, num));
+    }
+
+    /**
+     * This method simply puts the 2D array into a string so it can be written to a file.
+     * @param matrix
+     * @return
+     */
+    public static String print(int[][] matrix) {
+       String temp = new String();
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                temp += matrix[i][j];
+               temp += " ";
+            }
+            temp += "\n";
+        }
+        return temp;
+    } 
+
+}

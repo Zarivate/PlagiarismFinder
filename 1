@@ -1,0 +1,76 @@
+/*@author 1
+ * Project 5: Sudoku Solver
+ * A class to solve a sudoku grid using a recursive depth first search algorithm
+ */
+package sudoku;
+import java.util.*;
+import java.io.*;
+
+class Sudoku 
+{
+  static int[] sGrid;
+  // recursive depth first search algorith
+  static boolean solveGrid() 
+  {
+    for (int cell = 0, number, i; cell < 81; cell++)
+      if (sGrid[cell] < 1) {
+      check: for (number = 0; number++ < 9;) 
+      {
+        for (i = 0; i < 9; i++)
+          if (sGrid[cell/9*9 + i] == number | sGrid[cell%9+9 * i] == number | sGrid[(cell-cell%3)%9 + cell/27*27 + i%3 + i/3*9] == number) continue check;
+        sGrid[cell] = number;
+        if (solveGrid()) return true;
+        sGrid[cell] = 0;
+      }
+      return false;
+    }
+    return true;
+  }
+  
+  public static void main(String[] args) throws IOException
+  {
+    //Ask user for input file
+    Scanner reader = new Scanner(System.in);  
+    System.out.println("Enter file name: ");
+    String n = reader.nextLine();
+    Scanner s = new Scanner(new File(n));
+    //read in file and store elements in array list
+    ArrayList<Integer> list = new ArrayList<Integer>();
+    while (s.hasNext())
+    {
+      list.add(s.nextInt());
+    }
+    s.close();
+    //use array list to create sudoku grid
+    sGrid = new int[] {
+        list.get(0),list.get(1),list.get(2),list.get(3),list.get(4),list.get(5),list.get(6),list.get(7),list.get(8),
+        list.get(9),list.get(10),list.get(11),list.get(12),list.get(13),list.get(14),list.get(15),list.get(16),list.get(17),
+        list.get(18),list.get(19),list.get(20),list.get(21),list.get(22),list.get(23),list.get(24),list.get(25),list.get(26),
+        list.get(27),list.get(28),list.get(29),list.get(30),list.get(31),list.get(32),list.get(33),list.get(34),list.get(35),
+        list.get(36),list.get(37),list.get(38),list.get(39),list.get(40),list.get(41),list.get(42),list.get(43),list.get(44),
+        list.get(45),list.get(46),list.get(47),list.get(48),list.get(49),list.get(50),list.get(51),list.get(52),list.get(53),
+        list.get(54),list.get(55),list.get(56),list.get(57),list.get(58),list.get(59),list.get(60),list.get(61),list.get(62),
+        list.get(63),list.get(64),list.get(65),list.get(66),list.get(67),list.get(68),list.get(69),list.get(70),list.get(71),
+        list.get(72),list.get(73),list.get(74),list.get(75),list.get(76),list.get(77),list.get(78),list.get(79),list.get(80) };
+    //print original grid
+    System.out.println("Original Sudoku grid");
+    for (int j=0; j< 81;)
+    {
+      System.out.print(sGrid[j++] + (j%9==0 ? "\n" : " "));
+    }
+    //print solved grid
+    System.out.print("\nSolved Sudoku grid\n");
+    solveGrid();
+    PrintWriter writer = new PrintWriter(n.concat(".solved"));
+    for (int j=0; j<81;)
+    {
+      writer.print(sGrid[j++] + (j%9==0 ? "\n" : " "));
+    }
+    writer.close();
+    for (int j=0; j<81;)
+    {
+      System.out.print(sGrid[j++] + (j%9==0 ? "\n" : " "));
+    }
+    System.out.println("new file name is " + n +".solved");
+  }
+}

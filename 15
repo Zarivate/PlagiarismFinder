@@ -1,0 +1,143 @@
+package sudoku;
+import java.io.*;
+import java.util.Scanner;
+
+/**
+ * This program is used to solve a Soduko puzzle.
+ * It reads in a file that creates the grid, finds the single solution that completes it and writes the key to another file.
+ * The algorithm used is a recursive depth first search:
+ * Iterate [0-9] at empty spots to check validity.
+ * Valid - place number in the empty spot & proceed to next spot.
+ * Invalid for all [0-9] - backtrack to last spot and try values unvisited there.
+ * Do this recursively until the whole grid has valid numbers.
+ * Once, solved, write the solution to a new file with extension, ".solved".
+ *
+ * @Author 15
+ * CSCI 340 - Data Structures and Algorithms
+ * Project 5 - Sudoku
+ * 4/18/16
+ * @bugs none
+ */
+public class Sudoku {
+    private int[][] grid = new int[9][9]; //empty sudoku grid
+
+    public Sudoku(String fileName) throws FileNotFoundException {
+        File file = new File(fileName);
+        Scanner scan = new Scanner(file);
+        //set up game grid
+        while (scan.hasNext()) {
+            for (int row = 0; row < 9; row++) {
+                for (int col = 0; col < 9; col++) {
+                    int num = scan.nextInt();
+                    grid[row][col] = num;
+                    }
+                }
+            }
+
+        }
+
+    /**
+     * The solve method is our recursive method. It does the puzzle solving with the help
+     * of the valid method. It starts in the upper left hand corner, and traverses each spot on the grid
+     * to try to find valid numbers. If can't find any number that works for a spot, then it backtracks and
+     * tries a different combination of numbers. The base case is once it traversed the whole grid.
+     * @param rowSpot current row
+     * @param colSpot current column
+     * @return boolean indicating solved or not
+     */
+    public boolean solve(int rowSpot, int colSpot) {
+        //if we get to end of a row, go down to beginning of next row
+        if(colSpot==9){
+            colSpot=0;
+            rowSpot++;
+        }
+        //if get to row gets increased to 9 then we have solved everything (base case)
+        if(rowSpot==9){
+            return true;
+        }
+
+        int position = grid[rowSpot][colSpot];
+
+        //if spot is already fixed, move on to next spot
+        if(position!=0){
+            return solve(rowSpot, colSpot+1);
+        }
+        //if blank spot, start trying possibilities
+        for (int i = 1; i < 10; i++) {
+            boolean good = valid(rowSpot, colSpot, i);
+            //if not a valid number try next number
+            if(!good){
+                continue;
+            }
+            //if valid number then we can place it on grid
+            grid[rowSpot][colSpot] = i;
+            //recursive call to solve next spot
+            if(solve(rowSpot, colSpot+1)) {
+                return true;
+            }
+            //if solve fails we must backtrack
+            else grid[rowSpot][colSpot] = 0;
+        }
+        //return false if 1-9 didn't work
+        return false;
+    }
+
+    /**
+     * The valid method determines whether the number [1-9] can be placed without breaking the rules.
+     * @param rowSpot current row spot
+     * @param colSpot current col spot
+     * @param value value that is being checked
+     * @return boolean indicating valid position or not
+     */
+    public boolean valid(int rowSpot, int colSpot, int value){
+        //check if row already has value
+        for (int r = 0; r<9; r++) {
+            if(grid[r][colSpot]==value){
+                return false;
+            }
+        }
+        //check if column already has value
+        for (int c = 0; c<9; c++) {
+            if(grid[rowSpot][c]==value){
+                return false;
+            }
+        }
+        //check if 3x3 already has value
+        int topLeftR = (rowSpot/3) * 3; //finds the row that top left of 3x3 square is in
+        int topLeftC = (colSpot/3) * 3; //finds the col that top left of 3x3 square is in
+        for (int r = topLeftR; r < topLeftR+3; r++) {
+            for (int c = topLeftC; c < topLeftC+3; c++) {
+                if (grid[r][c] == value)
+                    return false;
+            }
+        }
+        //return true if value doesn't break rules
+        return true;
+    }
+
+    /**
+     * The main method prompts user for file, solves puzzle, and writes solution to a new file.
+     * @param args
+     * @throws IOException
+     */
+    public static void main(String[] args) throws IOException {
+        Scanner kybd = new Scanner(System.in);
+        System.out.print("Enter the sudoku grid file(ext): ");
+        String fileName = kybd.nextLine();
+        kybd.close();
+        Sudoku game = new Sudoku(fileName);
+
+        if(game.solve(0, 0)) {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName + ".solved"));
+            for (int row = 0; row < 9; row++) {
+                for (int col = 0; col < 9; col++) {
+                    writer.write(Integer.toString(game.grid[row][col]) + " ");
+                }
+                writer.newLine();
+            }
+            writer.close();
+            System.out.print("Solved!");
+        }
+        else System.out.println("Could not solve.");
+    }
+}

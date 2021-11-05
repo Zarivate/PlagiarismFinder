@@ -1,0 +1,216 @@
+package sudoku;
+
+import java.io.EOFException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Scanner;
+
+/**
+ * This program models a sudoku board when given input. It then solves the
+ * board. It reads a file from a given file path, solves the board, and then
+ * writes the solution to another, new file. Recursion is used for the solve
+ * method. There are several helper methods used to search the board for a
+ * target number to determine if a number can be placed in a cell.
+ *
+ * @author 19
+ */
+public class Sudoku {
+
+    //sudoku board
+    public static int[][] board = new int[9][9];
+
+    /**
+     * This is the main. It grabs a file path from the user and then reads it
+     * into a sudoku board represent by a 2d array. It solves the sudoku puzzle,
+     * and then prints the solution to a file appended with a .solved in the
+     * file path.
+     *
+     * @param args the command line arguments
+     * @throws java.io.IOException - the close statement in the finally block was complaining without this.
+     */
+    public static void main(String[] args) throws IOException {
+
+        //Get the file path
+        Scanner keys = new Scanner(System.in);
+        System.out.println("Enter File Path: ");
+        String path = keys.next();
+
+        FileReader inFile = null;
+        PrintWriter outFile = null;
+        //fill the board by reading in the file
+        //read in the file
+        try {
+            inFile = new FileReader(path);
+
+            int number;//holds the read-in number from inFile
+            int i = 0;
+            int j = 0;
+            //read the file and put the integers in the board
+            while ((number = inFile.read()) != -1) {
+                number = (int) (Character.getNumericValue(number));
+                //add number to board if it's 0 - 9 (so it ignores spaces and new line characters)
+                if (number < 10 && number >= 0) {
+                    board[i][j] = number;
+                    j++;
+                }
+                //if the end of line is reached, move to next line
+                if (j == 9) {
+                    i++;
+                    j = 0;
+                }
+            }//End while loop
+            //Solve board by starting at row 0 and column 0
+            solve(0, 0);
+
+        } catch (EOFException eof) {
+            System.out.println("End of File reached.");
+        }//the following catch occurs when the solve method completes. 
+        //It writes the board to the outFile
+        catch (Exception e) {
+            System.out.println(e);
+            //create the solution file
+            printToFile(outFile, path);
+        }//end of catch
+        finally {
+            //clean up messes
+            if (inFile != null) {
+                inFile.close();
+            }
+        }//end of finally
+    }//end of main
+
+    /**
+     * To clean up the main, this method was created. It's a try-catch block
+     * that controls outputting the solved board to a new file.
+     *
+     * @param outFile
+     * @param path
+     */
+    public static void printToFile(PrintWriter outFile, String path) {
+        try {
+            outFile = new PrintWriter(path.concat(".solved"));
+            for (int i = 0; i < 9; i++) {
+                for (int j = 0; j < 9; j++) {
+                    //write the cell and a space after it
+                    outFile.print(board[i][j] + " ");
+                }
+                outFile.println();//write a new line after each row
+            }//end of loop
+            outFile.close();
+
+        } catch (Exception otherE) {
+            System.out.println("Something went wrong with file write: " + otherE);
+        }//end of inner try
+    }
+
+    /**
+     * The recursive function used to solve the board. Throws an exception when
+     * the base case is reached. I tried writing this to use a return value
+     * instead of an exception, but it wasn't working well (because I was
+     * probably doing something stupid). I figured the most sure-fire way of
+     * exiting was to force it out via exception.
+     *
+     * @param row - number representing current row
+     * @param column - number representing current column
+     * @throws Exception - used to break out of recursion
+     */
+    public static void solve(int row, int column) throws Exception {
+        //if at the end of board, exit out
+        if (row > 8) {
+            throw new Exception("Solve complete");
+        }
+        //if the cell is filled, go to the next one
+        if (board[row][column] != 0) {
+            recursiveCaller(row, column);
+            //otherwise try to find a number to put into cell
+        } else {
+            for (int i = 1; i <= 9; i++) {
+                if (inRow(row, i) || inColumn(column, i) || inSquare(row, column, i)) {
+                    //do nothing
+                } else {
+                    //put number into cell
+                    board[row][column] = i;
+                    //check next cell
+                    recursiveCaller(row, column);
+                }//end outer if (place number into cells)
+            }//for loop
+            //This runs if no number was found.
+            //return cell to zero and backtrack
+            board[row][column] = 0;
+        }//end outer if (number finding)
+    } //end solve method
+
+    /**
+     * This was made to clean up the solve method. It was too cluttered. It just
+     * checks the next cell.
+     *
+     * @param row - number representing current row
+     * @param column - number representing current column
+     * @throws Exception that was thrown from solve method
+     */
+    public static void recursiveCaller(int row, int column) throws Exception {
+        //call solve depending on it it's the last column or not
+        if (column < 8) {
+            solve(row, column + 1);
+        } else {
+            solve(row + 1, 0);
+        }
+    }
+
+    /**
+     * Check if target is in the 3x3 square
+     *
+     * @param row
+     * @param column
+     * @param target
+     * @return boolean indicates whether target is in square
+     */
+    public static boolean inSquare(int row, int column, int target) {
+        //was giving an out of bounds error if I didn't do the below.
+        row = (row / 3) * 3;
+        column = (column / 3) * 3;
+
+        //search the square
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (board[row + i][column + j] == target) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if target is in the row.
+     *
+     * @param row
+     * @param target
+     * @return boolean indicates whether target is in row
+     */
+    public static boolean inRow(int row, int target) {
+        for (int column = 0; column < 9; column++) {
+            if (board[row][column] == target) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if target is in column
+     *
+     * @param column
+     * @param target
+     * @return boolean indicates whether target is in column
+     */
+    public static boolean inColumn(int column, int target) {
+        for (int row = 0; row < 9; row++) {
+            if (board[row][column] == target) {
+                return true;
+            }
+        }
+        return false;
+    }
+}

@@ -1,0 +1,153 @@
+package sudoku;
+
+import java.util.Arrays;
+import java.util.Scanner;
+import java.io.File;
+import java.io.PrintWriter;
+import java.io.IOException;
+
+/**
+ * Sudoku solver.
+ *
+ * 18
+ * CSCI 340 Data Structures and Algorithms
+ * April, 2016
+ *
+ * This application takes the path to a Sudoku game board file and attempts to solve it.
+ * If a solution is found, it will write it to standard output as well as a file in the same location with ".solved" appended to the filename.
+ */
+public class Sudoku
+{
+    /**
+     * Sudoku game board
+     */
+    private static int[][] grid = new int[9][9];
+
+    /**
+     * Main program entry point.
+     * 
+     */
+    public static void main(String[] args){
+        //get file for input from args
+        //check that a filename was provided
+        if(args.length == 0){
+            System.err.println("You must pass in the path to a Sudoku board file.");
+            return;
+        }
+        try{
+            //read in the game board
+            File infile = new File(args[0]);
+            Scanner filescan = new Scanner(infile);
+            int read = 0;
+            while(filescan.hasNextInt() && read <= 81){
+                //put tiles where they belong
+                grid[read/9][read%9] = filescan.nextInt();
+                read++;
+            }
+            //rudimentary check that we've read in an entire board
+            if(read != 81){
+                throw new Exception("Invalid game board. Only read " + (read + 1) + " tiles.");
+            }
+            //solve puzzle
+            boolean solved = solve(0, 0);
+            if(!solved){
+                System.out.println("Unable to solve puzzle.");
+                return;
+            }
+            //write the solved puzzle out to a file
+            File outfile = new File(args[0] + ".solved");
+            PrintWriter outwriter = new PrintWriter(outfile);
+            for(int[] row : grid){
+		//write it to stdout too
+                String strrow = Arrays.toString(row).replaceAll("[\\[\\],]", "");
+                System.out.println(strrow);
+                outwriter.println(strrow);
+            }
+            outwriter.close();
+        } catch(IOException e){
+            System.err.println("IO Error: " + e.getMessage());
+        } catch(Exception e){
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Solve Sudoku recursively.
+     * @param row current row index.
+     * @param col current column index.
+     * @return false if Sudoku was not solved. true if Sudoku is solved.
+     */
+    private static boolean solve(int row, int col){
+        //if we've reached the end, stop
+        if(row == 9){
+            return true;
+        }
+
+        //if this tile is already set, skip to next tile
+        if(grid[row][col] != 0){
+            //skip to next available tile
+            if(solve(col == 8? (row + 1): row, (col + 1) % 9)){
+                return true;
+            }
+        }else{
+            //work on each column in row
+            for (int i = 1; i <= 9; i++) {
+
+                //if this is a legal move, try it out
+                if (isLegalMove(row, col, i)) {
+                    grid[row][col] = i;
+
+                    //move to next tile and see if this path works 
+                    if (solve(col == 8? (row + 1) : row, (col + 1) % 9)){
+                        return true;
+                    } else {
+                        //backtrack
+                        grid[row][col] = 0;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if a value may be placed at the specified tile.
+     * @param row row index.
+     * @param col column index.
+     * @param value value to test
+     */
+
+    private static boolean isLegalMove(int row, int col, int value){
+        //check that the value isn't already in the 3 x 3 box
+        int startRow = row / 3 * 3;
+        int startCol = col / 3 * 3;
+
+        //check all values in the box except for itself
+        for (int i = startRow; i < startRow + 3; i++){
+            for (int j = startCol; j < startCol + 3; j++) {
+                if (!(i == row && j == col)) {
+                    if (grid[i][j] == value){
+                        return false;
+                    }
+                }
+            }
+        }
+
+        //check that the value isn't used in the current row or column
+        for (int i = 0; i < 9; i++) {
+            //don't check the same tile
+            if (i != col){
+                if (grid[row][i] == value){
+                    return false;
+                }
+            }
+            if (i != row){
+                if (grid[i][col] == value){
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+}

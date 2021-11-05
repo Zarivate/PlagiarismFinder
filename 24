@@ -1,0 +1,196 @@
+/**
+ * This class is used to solve Sudoku puzzles
+ * <p>
+ * This class takes the name of a file containing numbers
+ * for a 3x3 Sudoku puzzle and uses recursion to solve it.
+ * <p>
+ * The solution gets printed out and is also saved to the
+ * original fileName with ".solved" at the end.
+ * <p>
+ *
+ * @author 24
+ */
+
+package sudoku;
+
+import java.util.Scanner;
+import java.io.File;
+import java.io.PrintWriter;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.NoSuchElementException;
+
+public class Sudoku    {
+    
+    private int[][] board;
+    private String fileName;
+    private boolean solved;
+    
+    /**
+     * Basic constructor for Sudoku objects.
+     * <p>
+     * It instantiates the board and fileName and calls buildBoard() to fill board with values.
+     * @param fileName Name of the file
+     * @throws FileNotFoundException Throws exception if file is not found
+     */
+    public Sudoku(String fileName) throws FileNotFoundException    {
+        
+        board = new int[9][9];
+        this.fileName = fileName;
+        solved = false;
+        buildBoard();       
+    }
+    
+    /**
+     * Fills board with values contained in fileName.
+     * @throws FileNotFoundException Throws exception if file is not found
+     * @throws NoSuchElementException Throws exception if the file doesn't contain enough numbers
+     */
+    private void buildBoard() throws FileNotFoundException, NoSuchElementException    {
+        
+        Scanner file = new Scanner(new File(fileName));
+        
+        for (int row = 0; row <= 8; row++)    {
+            for (int col = 0; col <= 8; col++)    {
+                board[row][col] = file.nextInt();
+            }
+        }
+    }
+    
+    /**
+     * Method to print the board.
+     */
+    public void printBoard()    {
+        
+        System.out.println();
+        
+        for (int row = 0; row <= 8; row++)    {
+            for (int col = 0; col <= 8; col++)    {
+                
+                System.out.print(" " + board[row][col]);
+                
+                if (col == 2 || col == 5)
+                    System.out.print(" |");
+                if (col == 8)
+                    System.out.print("\n");
+                if ((row == 2 || row == 5) && col == 8)
+                      System.out.print(" ------|-------|------\n");
+            }
+        }
+    }
+    
+    /**
+     * Method to save the solved puzzle to a file.
+     * <p>
+     * Saves to original fileName with ".solved" at the end.
+     * @throws FileNotFoundException Throws exception if file is not found
+     * @throws IOException Throws exception if an I/O exception occurs
+     */
+    public void saveBoard() throws FileNotFoundException, IOException    {
+        try (PrintWriter out = new PrintWriter(fileName.concat(".solved"))) {
+            for (int row = 0; row <= 8; row++)    {
+                for (int col = 0; col <= 8; col++)    {
+                    out.print(board[row][col] + " ");
+                }
+                out.println();
+            }
+        }
+    }
+    
+    /**
+     * This method tests to see if num is a valid input for the puzzle.
+     * <p>
+     * It checks the current row, column, and box for num.
+     * @param row Current row
+     * @param col Current column
+     * @param num Number to check
+     * @return Returns false if num if found, else it returns true
+     */
+    public boolean isValidNum(int row, int col, int num)    {
+        /* Check row and column for num */
+        for (int k = 0; k < 9; k++)    {
+            if (num == board[row][k])
+                return false;
+            else if (num == board[k][col])
+                return false;
+        }
+        
+        /* Check box for num */
+        int x = (-1) * (row % 3);
+        
+        for (int i = 0; i <= 2; i++, x++)    {
+            int y = (-1) * (col % 3);
+            for (int j = 0; j <= 2; j++, y++)    {
+                if (num == board[row + x][col + y])
+                    return false;
+            }
+        }     
+        return true;  // No conflicts were found
+    }
+    
+    /**
+     * Recursive method to solve the puzzle.
+     * <p>
+     * This method moves cell by cell in board and tries all possible combinations
+     * for the puzzle until a solution is found.
+     * @param row
+     * @param col
+     */
+    public void solve(int row, int col)    {
+        
+        if (col == 9)    {  // Statement used to move to next row
+            col = 0;
+            row++;
+            if (row == 9)    {  // If the board contains valid values in rows 0-8
+                solved = true;  // then the board is solved
+                return;
+            }
+        }
+        else if (col == -1)    {  // Statement used to move to previous row
+            col = 0;
+            row--;
+        }
+        
+        if (board[row][col] != 0)    {  // If a fixed number is present
+            solve(row, ++col);          // move to the next number
+            col--;  // Decrement col after recursive call to keep corrent position
+            return;
+        }
+        
+        for (int num = 1; num <= 9; num++)    {  // Try numbers 1 - 9
+            if (isValidNum(row, col, num))    {  // If its a vaild number
+                board[row][col] = num;           // Save the value
+                solve(row, ++col);               // and move to the next cell
+                if (solved == true)  // If the puzzle is solved
+                    return;          // then return back to the previous cell
+                col--;  // Decrement col after recursive call to keep corrent position
+            }
+            if (num == 9)  {          // If no valid numbers were found
+                board[row][col] = 0;  // set current cell to 0
+                return;               // And move to previous cell
+            }   
+        }
+    }
+    
+    /**
+     * Main method to call various methods needed to print, solve, and save the puzzle.
+     * @param args Not used
+     */
+    public static void main(String[] args)    {
+        
+        Scanner key = new Scanner(System.in);
+        System.out.print("Enter the name of a Sudoku file: ");
+        try    {
+            Sudoku puzzle = new Sudoku(key.next());
+            puzzle.printBoard();
+            puzzle.solve(0, 0);
+            puzzle.saveBoard();
+            puzzle.printBoard();
+        }
+            catch (FileNotFoundException e) {System.out.println("File not found");}
+            catch (NoSuchElementException e) {System.out.println("The file does not contain enough numbers.");}
+            catch (IOException e) {System.out.println("An I/O Exception occured\n" + e.getMessage() + "\nExiting program...");
+                                    System.exit(0);}
+    }
+}

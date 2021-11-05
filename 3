@@ -1,0 +1,126 @@
+package sudoku;
+
+/**
+ * Created by 3 on 4/17/16.
+ */
+
+import java.io.*;
+import java.util.Scanner;
+
+public class Sudoku {
+
+    public static void main(String[] args) throws IOException {
+        // Get the file name and use it
+        System.out.println("Enter a file name: ");
+        Scanner input = new Scanner(System.in);
+        File file = new File(input.nextLine());
+        // Replace this if you can later
+        Scanner checkToReplace = new Scanner(file);
+        // Change the filename to a string to use for later method
+        String name = file.toString();
+        // Initial grid
+        int grid[][] = new int[9][9];
+        // Check the numbers one by one
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                grid[i][j] = checkToReplace.nextInt();
+            }
+        }
+        // If the puzzle has been solved print it out
+            if (solve(grid)) {
+                printPuzzle(grid, name);
+            }
+            else {
+                System.out.println("Puzzle has no solution");
+            }
+
+    }
+
+    // Method to solve the puzzle
+    public static boolean solve(int[][] grid) {
+        // Set the row and col to 0
+        int row = 0;
+        int col = 0;
+        // Look for zeros in the grid since those will be replaced
+        int[] position = searchForZero(grid, row, col);
+        row = position[0];
+        col = position[1];
+        if (row == -1) {
+            return true;
+        }
+        // Go through each column and row and insert a number
+        // Check if the number is valid in a method below
+        for (int num = 1; num < 10; num++) {
+            if (check(num, row, col, grid)) {
+                grid[row][col] = num;
+                if (solve(grid)) {
+                    return true;
+                } else {
+                    grid[row][col] = 0;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Search for any zeros
+    public static int[] searchForZero(int[][] grid, int row, int col) {
+        int[] position = new int[2];
+        // Go through each tile on the grid and search for zeros
+        // If a zero is found return the position of the tile
+        for (row = 0; row < 9; row++) {
+            for (col = 0; col < 9; col++) {
+                if (grid[row][col] == 0) {
+                    position[0] = row;
+                    position[1] = col;
+                    return position;
+                }
+            }
+        }
+
+        position[0] = -1;
+        position[1] = -1;
+        return position;
+    }
+
+    // Check if the number is valid in its position or not
+    public static boolean check(int num, int row, int col, int[][] grid) {
+        // Check the number by rows
+        for (int row2 = 0; row2 < 9; row2++) {
+            if (grid[row2][col] == num) {
+                return false;
+            }
+        }
+        // Check the number by columns
+        for (int col2 = 0; col2 < 9; col2++) {
+            if (grid[row][col2] == num) {
+                return false;
+            }
+        }
+        // Check the number by a 3*3 grid
+        int startRow = (row / 3) * 3;
+        int startCol = (col / 3) * 3;
+        for (int i = startRow; i < startRow + 3; i++) {
+            for (int j = startCol; j < startCol + 3; j++) {
+                if (grid[i][j] == num) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Print out the puzzle to the file
+    public static void printPuzzle(int[][] grid, String name) throws IOException{
+        FileWriter writer = new FileWriter(name + ".solved");
+        // Get the numbers of each tile to print
+        for (int row = 0; row <= 8; row++) {
+            for (int col = 0; col <= 8; col++) {
+                writer.write(Integer.toString(grid[row][col]));
+                writer.write(" ");
+            }
+            writer.write("\n");
+        }
+        writer.close();
+    }
+}

@@ -1,0 +1,221 @@
+/*
+ * 10
+ * Program to solve a sudoku puzzle through dfs
+ * 
+ */
+package sudoku;
+
+import java.util.Scanner;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.Arrays;
+
+public class Sudoku {
+
+    /**
+     * Verify is a function that checks if the number you are trying to add is allowable withen the rules
+     * of sudoku, call's 3 sub methods that do the hard work.
+     * @param baseGrid The sudoku grid so far
+     * @param row      The row that the number is located
+     * @param column   The column that the number is located
+     * @param number   The number to be checked 
+     * @return         if the three sub-methods return true, verify returns true.
+     */
+    public static boolean verify(String[][] baseGrid, int row, int column, String number) {
+
+        String temp[][] = new String[9][9];
+        temp = baseGrid;
+
+        boolean isGoodRow;
+        boolean isGoodColumn;
+        boolean isGoodSquare;
+
+        isGoodRow = row(temp, row, number);
+        isGoodColumn = column(temp, column, number);
+        isGoodSquare = square(temp, row, column, number);
+
+        return isGoodRow && isGoodColumn && isGoodSquare == true;
+    }
+
+    /**
+     * The row method scans through the entire row to see if their is a duplicate of number withen the row 
+     * 
+     * @param baseGrid The sudoku grid so far
+     * @param row      The row that the number is located
+     * @param number   The number to look for
+     * @return         False if it finds  the number, true if it doesn't 
+     */
+    public static boolean row(String baseGrid[][], int row, String number) {
+
+        for (int i = 0; i < baseGrid.length; i++) {
+            if (baseGrid[row][i] == null ? number == null : baseGrid[row][i].equals(number)) {
+                return false;
+            }
+
+        }
+        return true;
+
+    }
+    
+    
+    
+     /**
+     * The column method scans through the entire column to see if their is a duplicate of number withen the column 
+     * 
+     * @param baseGrid The sudoku grid so far
+     * @param column   The column that the number is located
+     * @param number   The number to look for
+     * @return         False if it finds  the number, true if it doesn't
+     */
+
+    public static boolean column(String baseGrid[][], int column, String number) {
+
+        for (int i = 0; i < baseGrid.length; i++) {
+            if (baseGrid[i][column] == null ? number == null : baseGrid[i][column].equals(number)) {
+                return false;
+            }
+
+        }
+        return true;
+
+    }
+
+    /**
+     *
+     * @param baseGrid The sudoku grid so far
+     * @param row      The row that the number is located
+     * @param column   The column that the number is located
+     * @param number   The number to look for
+     * @return         False if it finds  the number, true if it doesn't 
+     */
+    public static boolean square(String baseGrid[][], int row, int column, String number) {
+        int startCol = 3 * (column / 3);
+        int startRow = 3 * (row / 3);
+
+        for (int i = startRow; i < startRow + 3; i++) {
+            for (int j = startCol; j < startCol + 3; j++) {
+                if (baseGrid[i][j].equals(number)) {
+                    return false;
+                }
+
+            }
+
+        }
+        return true;
+    }
+
+    /**
+     * This method checks if the grid is completely full, if full returns true else, returns false.
+     * @param baseGrid
+     * @return True if full, false otherwise.
+     */
+    public static boolean isEmpty(String baseGrid[][]) {
+
+        for (int i = 0; i < baseGrid.length; i++) {
+            for (int j = 0; j < baseGrid.length; j++) {
+                if (baseGrid[i][j].equals(String.valueOf(0))) {
+                    return true;
+                }
+
+            }
+        }
+        return false;
+    }
+
+    /**
+     *This method take  in a sudoku grid and recursively solves it through a DFS algorithm
+     * First it checks if the puzzle is completely filled, returns true if filled, then it finds an empty spot in the puzzle. Then it checks
+     * if what number is allowed for that spot. It keeps going until it fails, if it fails it goes backwards and tries the next 
+     * number that would be allowed. If that fails it sets the current spot back to zero and goes back a level and tries again.
+     * This program assumes the sudoku puzzle is able to be solved.
+     * @param baseGrid
+     * @return The solved puzzle
+     */
+    public static boolean solve(String baseGrid[][]) {
+        int row = 0;
+        int column = 0;
+
+        if (!isEmpty(baseGrid)) {
+            return true;
+        }
+
+        //Finds a empty spot and saves the row/column to row and column
+        outerloop:
+        for (int i = 0; i < baseGrid.length; i++) {
+            for (int j = 0; j < baseGrid.length; j++) {
+                if (baseGrid[i][j].equals(String.valueOf(0))) {
+                    row = i;
+                    column = j;
+                    break outerloop;
+                }
+                if (!baseGrid[i][j].equals(String.valueOf(0))) {
+
+                }
+            }
+
+        }
+
+        for (int number = 1; number <= 9; number++) {
+            if (verify(baseGrid, row, column, String.valueOf(number)) == true) {
+                baseGrid[row][column] = String.valueOf(number);
+                
+                if (solve(baseGrid)) {
+                    return true;
+                }
+
+            }
+
+            baseGrid[row][column] = String.valueOf(0);
+        }
+
+        return false;
+
+    }
+
+
+    public static void main(String[] args) throws FileNotFoundException {
+        
+        int counter = 0;
+  
+        String startingPuzzle[][] = new String[9][9];
+        String fileName;
+        
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Enter the sudoku puzzles name");
+        fileName = sc.nextLine();
+       //For testing /home/student/mayer/Desktop/18.sdk
+       
+        File file = new File(fileName);
+        
+        Scanner input = new Scanner(file);
+
+      
+
+        int row = 0;
+        int column = 0;
+        
+        //loads in the starting puzzle.
+        while (input.hasNext()) {
+
+            startingPuzzle[row][column] = input.next();
+            
+            column++;
+            counter++;
+            if (counter == 9) {
+                column = 0;
+                row++;
+                counter = 0;
+            }
+        }
+        //first call to start the recursion.
+        solve(startingPuzzle);
+
+        System.out.println("Final Soultion");
+        System.out.println("");
+        for (String[] x : startingPuzzle) {
+            System.out.println(Arrays.toString(x));
+        }
+
+    }
+}
+
